@@ -10,7 +10,7 @@ context: |
   Testing: No test runner configured at project level (ComfyUI submodule has its own pytest)
   Style: Script-based automation, shell + Python
   Language: Spanish (README, docs), English for code/identifiers
-  Git: Not initialized
+  Git: Initialized (main branch, first commit)
 
 rules:
   proposal:
