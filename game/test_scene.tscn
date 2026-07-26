@@ -2,8 +2,10 @@
 
 [ext_resource type="Script" path="res://scripts/UnitController.gd" id="1_xqjay"]
 [ext_resource type="Script" path="res://scripts/UnitSprites.gd" id="2_brpfg"]
+[ext_resource type="Script" path="res://scripts/TestScene.gd" id="3_g0vmm"]
 
 [node name="TestScene" type="Node2D"]
+script = ExtResource("3_g0vmm")
 
 [node name="UnitController" type="CharacterBody2D" parent="."]
 script = ExtResource("1_xqjay")
