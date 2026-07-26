@@ -8,8 +8,8 @@ __pycache__/
 # ComfyUI (vendored, huge — track as submodule or ignore)
 comfyui/
 
-# Generated sprites (output from pipeline)
-sprites/
+# Generated sprites (output from pipeline, root only)
+/sprites/
 
 # OS
 .DS_Store
