@@ -1,0 +1,54 @@
+# openspec/config.yaml
+schema: spec-driven
+
+context: |
+  Project: Age of Acadia (ID0003)
+  Purpose: Sprite generation pipeline for video games using ComfyUI + Together AI + FLUX.1
+  Stack: Python 3.12, ComfyUI (local), Together AI API (cloud), FLUX.1 models (schnell/pro/pro1.1)
+  Architecture: ComfyUI (local) <-> Together AI API (cloud, GPU)
+  Project structure: comfyui/ (vendored), scripts/, workflows/, sprites/, docs/, screenshots/, origin/
+  Testing: No test runner configured at project level (ComfyUI submodule has its own pytest)
+  Style: Script-based automation, shell + Python
+  Language: Spanish (README, docs), English for code/identifiers
+  Git: Not initialized
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Cost impact analysis for Together AI API calls
+  specs:
+    - Use Given/When/Then for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group by phase, use hierarchical numbering
+    - Keep tasks completable in one session
+  apply:
+    guidelines:
+      - Follow existing script patterns
+      - Prefer Python standard library over new dependencies
+      - Keep Together AI API calls minimal — batch where possible
+    tdd: false
+    test_command: ""
+  verify:
+    test_command: ""
+    build_command: ""
+    coverage_threshold: 0
+  archive:
+    - Warn before merging destructive deltas
+
+testing:
+  strict_tdd: false
+  runner: null
+  reason: "No test runner detected at project level. ComfyUI submodule has its own pytest infrastructure but the project itself (scripts/, workflows/, sprites/) has no testing setup."
+  layers:
+    unit: { available: false, tool: null }
+    integration: { available: false, tool: null }
+    e2e: { available: false, tool: null }
+  coverage: { available: false, command: null }
+  quality:
+    linter: { available: false, command: null }
+    type_checker: { available: false, command: null }
+    formatter: { available: false, command: null }
