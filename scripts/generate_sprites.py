@@ -10,6 +10,55 @@ import glob
 
 client = Together()
 
+
+def encode_img(img):
+    """Convert a PIL Image to a base64 data URI for img2img reference."""
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return "data:image/png;base64," + base64.b64encode(buf.getvalue()).decode("utf-8")
+
+
+def generate_base_frame(character_name, prompt, output_dir, steps=4, seed=None):
+    """Generate a single high-quality base frame using FLUX.1.1-pro.
+
+    This frame serves as the visual reference for ALL subsequent frames,
+    ensuring character consistency across animations and directions.
+    Produces a 512x512 image, resized to 128x128 and saved as reference.
+    """
+    full_prompt = (
+        f"pixel art style, game sprite, {prompt}, "
+        f"facing front, standing idle, looking at camera, "
+        f"both feet planted, arms relaxed, symmetrical pose, "
+        f"retro RTS game character, AoE2 style, clean silhouette"
+    )
+
+    print(f"  Generating base frame (FLUX.1.1-pro, {steps} steps, guidance 7.0)...")
+    arguments = {
+        "model": "black-forest-labs/FLUX.1.1-pro",
+        "prompt": full_prompt,
+        "width": 512,
+        "height": 512,
+        "steps": steps,
+        "n": 1,
+        "response_format": "b64_json",
+        "guidance_scale": 7.0,
+    }
+    if seed is not None:
+        arguments["seed"] = seed
+
+    response = client.images.generate(**arguments)
+    img_data = response.data[0].b64_json
+    img = Image.open(io.BytesIO(base64.b64decode(img_data)))
+    img = img.convert("RGBA")
+
+    # Save reference at 128x128
+    ref = img.resize((128, 128), Image.LANCZOS)
+    os.makedirs(os.path.join(output_dir, character_name), exist_ok=True)
+    ref_path = os.path.join(output_dir, character_name, f"{character_name}_base.png")
+    ref.save(ref_path, "PNG")
+    print(f"  Base frame saved: {ref_path}")
+    return ref
+
 SPRITE_SHEET_CONFIG = {
     "idle": {"frames": 4, "directions": 4},
     "walk": {"frames": 6, "directions": 4},
@@ -44,23 +93,40 @@ def generate_sprite(
     height=512,
     steps=4,
     seed=None,
+    reference_image=None,
+    consistent=False,
 ):
     full_prompt = f"pixel art style, game sprite, {prompt}, {animation} animation frame {frame}, {direction} view, transparent background, 512x512, retro game character, isolated"
     negative = "photorealistic, 3d, blurry, distorted, low quality, bad anatomy, extra limbs"
 
+    model = "black-forest-labs/FLUX.1-schnell"
+    guidance = 3.0
+
+    if consistent:
+        model = "black-forest-labs/FLUX.1-schnell"
+        guidance = 7.0
+        full_prompt = (
+            f"pixel art, game sprite, {prompt}, "
+            f"EXACT same character as reference image, same clothes, same colors, same proportions, "
+            f"{direction} view, {animation} animation, frame {frame}, "
+            f"AoE2 isometric style, retro game character, consistent design"
+        )
+
     arguments = {
-        "model": "black-forest-labs/FLUX.1-schnell",
+        "model": model,
         "prompt": full_prompt,
         "width": width,
         "height": height,
         "steps": steps,
         "n": 1,
         "response_format": "b64_json",
-        "guidance_scale": 3.0,
+        "guidance_scale": guidance,
     }
 
     if seed is not None:
         arguments["seed"] = seed
+    if reference_image is not None:
+        arguments["image_url"] = encode_img(reference_image)
 
     response = client.images.generate(**arguments)
     img_data = response.data[0].b64_json
@@ -82,10 +148,13 @@ def generate_character_sheet(
     steps=4,
     seed=None,
     animations=None,
+    reference_image=None,
+    consistent=False,
 ):
     if animations is None:
         animations = SPRITE_SHEET_CONFIG
 
+    total_frames = sum(c["frames"] * c["directions"] for c in animations.values())
     generated = []
     for anim_name, config in animations.items():
         dir_count = config["directions"]
@@ -105,9 +174,11 @@ def generate_character_sheet(
                     height=512,
                     steps=steps,
                     seed=current_seed,
+                    reference_image=reference_image,
+                    consistent=consistent,
                 )
                 generated.append(filename)
-                print(f"  [{len(generated)}/{sum(c['frames']*c['directions'] for c in animations.values())}] {filename}")
+                print(f"  [{len(generated)}/{total_frames}] {filename}")
 
     return generated
 
@@ -228,6 +299,8 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=None, help="Base seed for reproducibility")
     parser.add_argument("--spritesheet", action="store_true", help="Generate combined sprite sheet after generation")
     parser.add_argument("--strip-format", action="store_true", help="Generate per-animation strips + JSON manifest")
+    parser.add_argument("--consistent", action="store_true", help="Use img2img consistency: generate base frame first, use as reference for all frames")
+    parser.add_argument("--output-path", default=None, help="Subpath under output dir (e.g. 'infanteria')")
 
     args = parser.parse_args()
 
@@ -236,23 +309,48 @@ if __name__ == "__main__":
     else:
         animations = SPRITE_SHEET_CONFIG
 
+    # Resolve output directory with optional subpath
+    output_dir = args.output
+    if args.output_path:
+        output_dir = os.path.join(args.output, args.output_path)
+    os.makedirs(output_dir, exist_ok=True)
+
     print(f"Generating sprites for: {args.character}")
     print(f"Prompt: {args.prompt}")
-    print(f"Output: {args.output}")
+    print(f"Output: {output_dir}")
+    if args.consistent:
+        print(f"Mode: CONSISTENT — base frame with FLUX.1.1-pro + img2img reference")
+
+    reference_image = None
+    gen_steps = args.steps
+
+    if args.consistent:
+        # Step 1: generate a high-quality base frame
+        base_ref = generate_base_frame(
+            character_name=args.character,
+            prompt=args.prompt,
+            output_dir=output_dir,
+            steps=12,
+            seed=args.seed or 42,
+        )
+        reference_image = base_ref
+        gen_steps = 8  # more steps for consistent frames
 
     generated = generate_character_sheet(
         character_name=args.character,
         prompt=args.prompt,
-        output_dir=args.output,
-        steps=args.steps,
+        output_dir=output_dir,
+        steps=gen_steps,
         seed=args.seed,
         animations=animations,
+        reference_image=reference_image,
+        consistent=args.consistent,
     )
     print(f"\nDone! Generated {len(generated)} sprites.")
 
     if args.spritesheet:
-        create_sprite_sheet(args.character, args.output)
+        create_sprite_sheet(args.character, output_dir)
 
     if args.strip_format:
-        strips = create_strips(args.character, args.output, animations)
-        write_manifest(args.character, args.output, strips, animations)
+        strips = create_strips(args.character, output_dir, animations)
+        write_manifest(args.character, output_dir, strips, animations)
