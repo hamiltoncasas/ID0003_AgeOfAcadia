@@ -1,0 +1,78 @@
+[gd_resource type="TileSet" load_steps=8 format=3]
+
+[ext_resource type="Texture2D" path="res://sprites/entorno/pasto/base/pasto_gen.png" id="1"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/agua_poca/base/agua_poca_sin.png" id="2"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/arena/base/arena_sin.png" id="3"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/caminos/base/caminos_sin.png" id="4"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/acantilados/base/acantilados_sin.png" id="5"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/acantilados_roca/base/acantilados_roca_sin.png" id="6"]
+[ext_resource type="Texture2D" path="res://sprites/entorno/agua_profunda/base/agua_profunda_sin.png" id="7"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_grass"]
+texture = ExtResource("1")
+texture_region_size = Vector2i(128, 64)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+1:0/0 = 0
+1:0/0:next_alternative_id = 0
+0:1/0 = 0
+0:1/0:next_alternative_id = 0
+1:1/0 = 0
+1:1/0:next_alternative_id = 0
+0:2/0 = 0
+0:2/0:next_alternative_id = 0
+1:2/0 = 0
+1:2/0:next_alternative_id = 0
+0:3/0 = 0
+0:3/0:next_alternative_id = 0
+1:3/0 = 0
+1:3/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_water"]
+texture = ExtResource("2")
+texture_region_size = Vector2i(128, 64)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_sand"]
+texture = ExtResource("3")
+texture_region_size = Vector2i(128, 64)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_dirt"]
+texture = ExtResource("4")
+texture_region_size = Vector2i(128, 64)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cliff"]
+texture = ExtResource("5")
+texture_region_size = Vector2i(128, 128)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_cliff_rock"]
+texture = ExtResource("6")
+texture_region_size = Vector2i(128, 128)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_deep_water"]
+texture = ExtResource("7")
+texture_region_size = Vector2i(128, 64)
+0:0/0 = 0
+0:0/0:next_alternative_id = 0
+
+[resource]
+tile_size = Vector2i(128, 64)
+tile_shape = 1
+tile_layout = 1
+tile_offset_axis = 0
+sources/0 = SubResource("TileSetAtlasSource_grass")
+sources/1 = SubResource("TileSetAtlasSource_water")
+sources/2 = SubResource("TileSetAtlasSource_sand")
+sources/3 = SubResource("TileSetAtlasSource_dirt")
+sources/4 = SubResource("TileSetAtlasSource_cliff")
+sources/5 = SubResource("TileSetAtlasSource_cliff_rock")
+sources/6 = SubResource("TileSetAtlasSource_deep_water")

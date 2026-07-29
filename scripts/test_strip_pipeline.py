@@ -156,6 +156,13 @@ def verify_manifest(manifest_path, strips, animations):
             f"Strips count: {len(data.get('strips', []))} != {len(strips)}"
         )
 
+    # Check each strip has speed field
+    for s in data.get("strips", []):
+        if "speed" not in s:
+            errors.append(f"Strip missing speed field: {s.get('file', '?')}")
+        elif not isinstance(s["speed"], (int, float)):
+            errors.append(f"Strip speed not numeric: {s.get('file', '?')} speed={s['speed']}")
+
     return errors, 0
 
 

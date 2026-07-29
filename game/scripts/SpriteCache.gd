@@ -1,19 +1,10 @@
 extends Node
-## Central texture cache singleton (autoload).
-##
-## All unit textures load through this cache to ensure each strip PNG
-## is loaded only once regardless of how many unit instances share it.
-##
-## Usage:
-##   var tex: Texture2D = SpriteCache.get_texture("res://sprites/arquero_idle_front.png")
 
 var _cache: Dictionary = {}
 
 func get_texture(path: String) -> Texture2D:
-	## Return the cached texture at path, loading it on first access.
 	if _cache.has(path):
 		return _cache[path]
-
 	var tex: Texture2D = load(path)
 	if tex:
 		_cache[path] = tex
@@ -22,14 +13,80 @@ func get_texture(path: String) -> Texture2D:
 	return tex
 
 func has_texture(path: String) -> bool:
-	## Return true if path has been cached.
 	return _cache.has(path)
 
 func clear() -> void:
-	## Evict all cached textures. Use when reloading resources.
 	_cache.clear()
 
 func remove(path: String) -> void:
-	## Evict a single texture from cache.
 	if _cache.has(path):
 		_cache.erase(path)
+
+var _entorno_textures: Dictionary = {}
+var _entorno_loaded: bool = false
+
+func load_env_textures() -> void:
+	_entorno_textures["water"] = []
+	_entorno_textures["sand"] = []
+	_entorno_textures["dirt"] = []
+	_entorno_textures["grass"] = []
+	_entorno_textures["cliff"] = []
+	_entorno_textures["trees"] = []
+	_entorno_textures["rocks"] = []
+	_entorno_textures["decorations"] = []
+
+	var dir := DirAccess.open("res://sprites/entorno/")
+	if not dir:
+		push_error("SpriteCache: Cannot open res://sprites/entorno/")
+		return
+
+	dir.list_dir_begin()
+	var entry := dir.get_next()
+	while entry != "":
+		if entry != "." and entry != ".." and dir.current_is_dir():
+			var biome_key := _categorize_entorno_subdir(entry)
+			if biome_key:
+				var sin_path := "res://sprites/entorno/" + entry + "/base/" + entry + "_sin.png"
+				var tex := load(sin_path) as Texture2D
+				if tex:
+					_entorno_textures[biome_key].append(tex)
+				else:
+					# Fallback: load any _sin.png from base/ directory
+					var base_dir := DirAccess.open("res://sprites/entorno/" + entry + "/base")
+					if base_dir:
+						base_dir.list_dir_begin()
+						var file := base_dir.get_next()
+						while file != "":
+							if file.ends_with("_sin.png") and not file.ends_with(".png.import"):
+								tex = load("res://sprites/entorno/" + entry + "/base/" + file) as Texture2D
+								if tex:
+									_entorno_textures[biome_key].append(tex)
+							file = base_dir.get_next()
+		entry = dir.get_next()
+
+	_entorno_loaded = true
+
+func _categorize_entorno_subdir(name: String) -> String:
+	match name:
+		"agua_poca", "agua_profunda":
+			return "water"
+		"arena":
+			return "sand"
+		"caminos":
+			return "dirt"
+		"pasto":
+			return "grass"
+		"acantilados", "acantilados_roca":
+			return "cliff"
+		"roble", "pino", "arce", "abedul", "sauce", "cipres":
+			return "trees"
+		"rocas", "rocas_bloqueo":
+			return "rocks"
+		"flores", "juncos", "lirios_acuaticos", "arbustos", "hongos", "bambu", "cactus", "palmera":
+			return "decorations"
+	return ""
+
+func get_entorno_textures() -> Dictionary:
+	if not _entorno_loaded:
+		load_env_textures()
+	return _entorno_textures.duplicate()

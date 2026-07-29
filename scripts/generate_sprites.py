@@ -260,14 +260,28 @@ def create_strips(character_name, output_dir, animations=None):
                     "direction": direction,
                     "file": strip_filename,
                     "frames": frame_count,
+                    "speed": 5.0,
                 })
                 print(f"  Strip: {strip_filename} ({len(frames)} frames)")
 
     return strips
 
 
+# Spec frame counts for validation
+SPEC_FRAME_COUNTS = {
+    "idle": 3,
+    "walk": 4,
+    "attack": 2,
+    "hurt": 2,
+    "death": 3,
+}
+
+
 def write_manifest(character_name, output_dir, strips, animations=None):
-    """Write {character}_manifest.json with frame dims, anim list, and strip metadata."""
+    """Write {character}_manifest.json with frame dims, anim list, and strip metadata.
+
+    Validates frame counts against SPEC_FRAME_COUNTS and logs warnings on mismatch.
+    """
     if animations is None:
         animations = STRIP_CONFIG
 
@@ -282,6 +296,17 @@ def write_manifest(character_name, output_dir, strips, animations=None):
         },
         "strips": strips,
     }
+
+    # Validate frame counts against spec (warning only, no crash)
+    spec = SPEC_FRAME_COUNTS
+    for strip in strips:
+        anim = strip["animation"]
+        expected = spec.get(anim)
+        if expected is not None and strip["frames"] != expected:
+            print(
+                f"  WARNING: {character_name} {anim}/{strip['direction']}: "
+                f"expected {expected} frames, got {strip['frames']}"
+            )
 
     manifest_path = os.path.join(output_dir, f"{character_name}_manifest.json")
     with open(manifest_path, "w") as f:

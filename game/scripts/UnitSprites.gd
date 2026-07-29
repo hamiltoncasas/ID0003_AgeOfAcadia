@@ -13,9 +13,6 @@ class_name UnitSprites extends Resource
 ## anim_name -> direction_name -> { path, frames }
 var animations: Dictionary = {}
 
-## Cache singleton resolved at runtime (autoload not available at parse time).
-var _cache: Node = null
-
 
 static func load_from_manifest(path: String) -> UnitSprites:
 	## Load manifest JSON, create UnitSprites, resolve strip paths.
@@ -47,6 +44,7 @@ static func load_from_manifest(path: String) -> UnitSprites:
 		var anim: String = strip.get("animation", "")
 		var dir: String = strip.get("direction", "")
 		var frames: int = strip.get("frames", 1)
+		var speed: float = strip.get("speed", 5.0)
 		var strip_path: String = base_dir.path_join(strip.get("file", ""))
 
 		if not sprites.animations.has(anim):
@@ -54,16 +52,22 @@ static func load_from_manifest(path: String) -> UnitSprites:
 		sprites.animations[anim][dir] = {
 			"path": strip_path,
 			"frames": frames,
+			"speed": speed,
 		}
 
 	return sprites
 
 
-func _get_cache() -> Node:
-	"""Lazy-resolve the SpriteCache autoload singleton."""
-	if _cache == null:
-		_cache = Engine.get_singleton("SpriteCache")
-	return _cache
+func _load_texture(path: String) -> Texture2D:
+	"""Load a texture, using SpriteCache if available, otherwise direct load()."""
+	if Engine.has_singleton("SpriteCache"):
+		var cache = Engine.get_singleton("SpriteCache")
+		if cache and cache.has_method("get_texture"):
+			return cache.get_texture(path)
+	var tex: Texture2D = load(path)
+	if tex == null:
+		push_error("UnitSprites: failed to load texture: ", path)
+	return tex
 
 
 func build_sprite_frames() -> SpriteFrames:
@@ -71,18 +75,16 @@ func build_sprite_frames() -> SpriteFrames:
 	## Each animation is named "{anim}_{direction}" (e.g. "idle_front").
 	## Frames are AtlasTexture slices from the strip PNG.
 	var frames := SpriteFrames.new()
-	var cache := _get_cache()
 
 	for anim in animations:
 		for dir in animations[anim]:
 			var strip_data: Dictionary = animations[anim][dir]
-			var tex: Texture2D = cache.get_texture(strip_data["path"])
+			var tex: Texture2D = _load_texture(strip_data["path"])
 			var frame_count: int = strip_data["frames"]
 			var anim_name: String = get_animation_name(anim, dir)
 
 			frames.add_animation(anim_name)
-			# Default speed — can be tuned per-animation later
-			frames.set_animation_speed(anim_name, 5.0)
+			frames.set_animation_speed(anim_name, strip_data.get("speed", 5.0))
 			frames.set_animation_loop(anim_name, true)
 
 			for i in range(frame_count):
