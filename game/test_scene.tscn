@@ -1,30 +1,33 @@
 [gd_scene load_steps=3 format=3]
 
-[ext_resource type="Script" path="res://scripts/UnitController.gd" id="1_xqjay"]
-[ext_resource type="Script" path="res://scripts/UnitSprites.gd" id="2_brpfg"]
-[ext_resource type="Script" path="res://scripts/TestScene.gd" id="3_g0vmm"]
+[ext_resource type="Script" path="res://scripts/UnitController.gd" id="1_uabxv"]
+[ext_resource type="Script" path="res://scripts/TestScene.gd" id="2_bcdea"]
 
 [node name="TestScene" type="Node2D"]
-script = ExtResource("3_g0vmm")
+script = ExtResource("2_bcdea")
 
 [node name="UnitController" type="CharacterBody2D" parent="."]
-script = ExtResource("1_xqjay")
-unit_sprites = null
+script = ExtResource("1_uabxv")
 speed = 100.0
 default_animation = "idle"
-position = Vector2(160, 90)
+position = Vector2(320, 180)
 
 [node name="AnimatedSprite2D" type="AnimatedSprite2D" parent="UnitController"]
-position = Vector2(0, 0)
-scale = Vector2(3, 3)
+position = Vector2(0, -8)
+scale = Vector2(2, 2)
 
 [node name="Camera2D" type="Camera2D" parent="UnitController"]
-anchor_mode = 0
+enabled = true
+anchor_mode = 1
+zoom = Vector2(0.5, 0.5)
+position_smoothing_enabled = true
+position_smoothing_speed = 6.0
 
 [node name="Instructions" type="Label" parent="."]
 offset_left = 8.0
 offset_top = 8.0
-text = "Move with WASD | Arrow keys"
+text = "WASD=mover | F=disparar | H=herir | R=morir | E=revivir | +/- o rueda=zoom"
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
 theme_override_constants/shadow_offset = Vector2(1, 1)
+z_index = 10

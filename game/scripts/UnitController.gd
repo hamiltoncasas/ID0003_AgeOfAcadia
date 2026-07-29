@@ -7,27 +7,107 @@ class_name UnitController extends CharacterBody2D
 ##
 ## The LEFT profile animation reuses the RIGHT profile texture with
 ## flip_h = true, so no separate left-facing strip is needed.
+## front_angle also flips when moving left, so a single front_angle strip
+## covers both down-right and down-left movement.
+##
+## When a direction animation is missing (e.g. back/back_angle for units
+## with only 3 strips), _resolve_fallback() tries alternative directions
+## instead of falling back to the first available animation.
 ##
 ## unit_sprites should be a UnitSprites Resource (typed as Resource here
 ## to avoid parse-time dependency on the class_name declaration).
 
-@export var unit_sprites: Resource
 @export var speed: float = 100.0
 @export var default_animation: String = "idle"
 
-@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+const ARROW_SCENE: PackedScene = preload("res://scenes/Arrow.tscn")
+const ARROW_SPAWN_OFFSET: float = 20.0
 
-## Tracks the current base animation ("idle" / "walk" / etc.)
-var _base_anim: String = "idle"
+const ZOOM_MIN: float = 0.3
+const ZOOM_MAX: float = 3.0
+const ZOOM_STEP: float = 0.1
+
+@onready var animated_sprite: AnimatedSprite2D = $AnimatedSprite2D
+@onready var _camera: Camera2D = $Camera2D
+
+## Animation state machine
+enum State { IDLE, WALK, ATTACK, HURT, DEATH }
+
+## Current state. Initial state is always IDLE.
+var _state: State = State.IDLE
+## Set true by die() — locks all movement input.
+var _is_dead: bool = false
+## Last movement direction, used by attack()/hurt()/die() to play facing-correct animation.
+var _last_direction: Vector2 = Vector2.DOWN
+
+var _unit_sprites: Resource = null
 
 
 func _ready() -> void:
-	if unit_sprites:
-		animated_sprite.sprite_frames = unit_sprites.build_sprite_frames()
-	_update_animation(Vector2.DOWN)
+	# Connect animation loop signal for auto-transitions (ATTACK/HURT → IDLE)
+	animated_sprite.animation_looped.connect(_on_animation_looped)
+	# Try to build sprite frames now — will work if unit_sprites was already set
+	_rebuild_sprite_frames()
+
+
+## Adjust camera zoom by delta, clamped to [ZOOM_MIN, ZOOM_MAX].
+func _zoom(delta: float) -> void:
+	if _camera == null:
+		return
+	_camera.zoom = Vector2(
+		clampf(_camera.zoom.x + delta, ZOOM_MIN, ZOOM_MAX),
+		clampf(_camera.zoom.y + delta, ZOOM_MIN, ZOOM_MAX),
+	)
+
+
+func _rebuild_sprite_frames() -> void:
+	if _unit_sprites == null or animated_sprite == null:
+		return
+	var sf = _unit_sprites.build_sprite_frames()
+	if sf:
+		animated_sprite.sprite_frames = sf
+		_update_animation(Vector2.DOWN)
+
+
+## Assign UnitSprites resource and rebuild animation frames.
+## Safe to call anytime, even after _ready().
+func set_unit_sprites(sprites: Resource) -> void:
+	_unit_sprites = sprites
+	_rebuild_sprite_frames()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("test_attack"):
+		attack()
+	elif event.is_action_pressed("test_hurt"):
+		hurt()
+	elif event.is_action_pressed("test_die"):
+		die()
+	elif event.is_action_pressed("test_revive"):
+		_revive()
+	elif event.is_action_pressed("zoom_in"):
+		_zoom(ZOOM_STEP)
+	elif event.is_action_pressed("zoom_out"):
+		_zoom(-ZOOM_STEP)
+	elif event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+			# Click izquierdo: dispara hacia la posición del mouse
+			var target: Vector2 = get_global_mouse_position()
+			_update_animation((target - global_position).normalized())
+			attack(target)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
+			_zoom(ZOOM_STEP)
+		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+			_zoom(-ZOOM_STEP)
 
 
 func _physics_process(_delta: float) -> void:
+	# DEATH locks all movement input
+	if _is_dead:
+		velocity = Vector2.ZERO
+		move_and_slide()
+		return
+
 	var input_dir := Vector2(
 		Input.get_axis("ui_left", "ui_right"),
 		Input.get_axis("ui_up", "ui_down"),
@@ -35,12 +115,16 @@ func _physics_process(_delta: float) -> void:
 
 	if input_dir != Vector2.ZERO:
 		velocity = input_dir * speed
-		_base_anim = "walk"
-		_update_animation(input_dir)
+		# Solo actualizar animación si no está en una acción (ATTACK/HURT/DEATH)
+		if _state in [State.IDLE, State.WALK]:
+			_state = State.WALK
+			_update_animation(input_dir)
 	else:
 		velocity = Vector2.ZERO
-		_base_anim = "idle"
-		_update_animation(Vector2.DOWN)
+		if _state in [State.IDLE, State.WALK]:
+			_state = State.IDLE
+			_update_animation(_last_direction)
+	# Durante ATTACK/HURT/DEATH: animación controlada por la acción, no por input
 
 	move_and_slide()
 
@@ -79,30 +163,174 @@ static func angle_to_direction(angle: float) -> String:
 	return "front"  # fallback
 
 
-func _update_animation(direction: Vector2) -> void:
-	var anim_dir := angle_to_direction(atan2(direction.y, direction.x))
-	var anim_name := _base_anim + "_" + anim_dir
+## Map State enum value to its animation name prefix.
+static func _state_to_anim(state: State) -> String:
+	match state:
+		State.WALK:   return "walk"
+		State.ATTACK: return "attack"
+		State.HURT:   return "hurt"
+		State.DEATH:  return "death"
+		_:            return "idle"
 
-	var sf := animated_sprite.sprite_frames
+
+func _update_animation(direction: Vector2) -> void:
+	_last_direction = direction
+	var anim_dir := angle_to_direction(atan2(direction.y, direction.x))
+	var anim_name: String = _state_to_anim(_state) + "_" + anim_dir
+
+	var sf: SpriteFrames = animated_sprite.sprite_frames
 	if sf == null:
 		return
 
-	if sf.has_animation(anim_name):
-		animated_sprite.play(anim_name)
+	# Resolve animation — try exact name, then direction fallbacks
+	var base_anim: String = _state_to_anim(_state)
+	var resolved: String = anim_name if sf.has_animation(anim_name) \
+		else _resolve_fallback(base_anim, anim_dir, sf)
+
+	if resolved != "":
+		animated_sprite.play(resolved)
+
+	# Flip profile and front_angle when moving left
+	animated_sprite.flip_h = direction.x < 0 and anim_dir in ["profile", "front_angle"]
+
+
+## When a direction animation is missing, try alternative directions
+## before falling back to the first available animation.
+## This allows characters with only 3 direction strips (profile, front_angle, front)
+## to animate correctly when moving up (maps back → front, back_angle → front_angle).
+static func _resolve_fallback(base_anim: String, dir: String, sf: SpriteFrames) -> String:
+	var alternatives := {
+		"back": ["front", "front_angle", "profile"],
+		"back_angle": ["front_angle", "profile", "front"],
+	}
+
+	# First: try to stay in the same base animation
+	if dir in alternatives:
+		for alt_dir: String in alternatives[dir] as Array[String]:
+			var alt_name: String = base_anim + "_" + alt_dir
+			if sf.has_animation(alt_name):
+				return alt_name
+	
+	# Second: try any direction of the same base animation
+	var all_dirs := ["front", "front_angle", "profile", "back_angle", "back"]
+	for check_dir in all_dirs:
+		var check_name: String = base_anim + "_" + check_dir
+		if sf.has_animation(check_name):
+			return check_name
+
+	# Last resort: fall back to first available animation of ANY type
+	var names := sf.get_animation_names()
+	return names[0] if names.size() > 0 else ""
+
+
+## --- Public Activation API ---
+
+## Start attack animation. Loops once then auto-returns to IDLE.
+## Si se pasa [target_pos], la flecha apunta a esa posición con arco.
+func attack(target_pos: Vector2 = Vector2.INF) -> void:
+	if _is_dead:
+		return
+	_state = State.ATTACK
+	_update_animation(_last_direction)
+	# Spawn arrow — con o sin objetivo
+	_spawn_arrow(target_pos)
+
+
+## Spawn an arrow projectile with ballistic arc.
+## Si [target_pos] no es INF, la flecha calcula la trayectoria para caer ahí.
+func _spawn_arrow(target_pos: Vector2 = Vector2.INF) -> void:
+	var arrow: Arrow = ARROW_SCENE.instantiate()
+	
+	if target_pos != Vector2.INF:
+		# Disparo dirigido: la flecha calcula el arco por sí sola
+		arrow.target_pos = target_pos
+		var dir := (target_pos - global_position).normalized()
+		var offset := dir * ARROW_SPAWN_OFFSET + Vector2(0, -6)
+		arrow.global_position = global_position + offset
 	else:
-		# Fallback: try the first available animation
-		var names := sf.get_animation_names()
-		if names.size() > 0:
-			animated_sprite.play(names[0])
-
-	# Flip the sprite for left-profile movement
-	if anim_dir == "profile" and direction.x < 0:
-		animated_sprite.flip_h = true
-	elif anim_dir == "profile":
-		animated_sprite.flip_h = false
+		# Disparo direccional: velocidad en el plano del suelo
+		var dir := _last_direction.normalized()
+		arrow.velocity = dir * arrow.speed
+		var offset := dir * ARROW_SPAWN_OFFSET + Vector2(0, -6)
+		arrow.global_position = global_position + offset
+	
+	get_parent().add_child(arrow)
 
 
-## Switch the base animation type (e.g. from "idle" to "attack").
+## Start hurt animation. Loops once then auto-returns to IDLE.
+func hurt() -> void:
+	if _is_dead:
+		return
+	_state = State.HURT
+	_update_animation(_last_direction)
+
+
+## Start death animation. Terminal — locks all movement input.
+func die() -> void:
+	_state = State.DEATH
+	_is_dead = true
+	_update_animation(_last_direction)
+
+
+## Reset from DEATH back to IDLE (test helper).
+func _revive() -> void:
+	_is_dead = false
+	_state = State.IDLE
+	animated_sprite.rotation = 0.0
+	_update_animation(_last_direction)
+
+
+## Called when the current animation completes a loop.
+## ATTACK and HURT auto-transition to IDLE.
+## DEATH stops on the last frame (character stays lying on the ground).
+func _on_animation_looped() -> void:
+	match _state:
+		State.ATTACK, State.HURT:
+			_state = State.IDLE
+			_update_animation(_last_direction)
+		State.DEATH:
+			animated_sprite.stop()
+
+
+## Switch the base animation type by string name (backwards-compat).
+## Prefer typed API: attack(), hurt(), die()
 func play_animation(anim: String, direction: Vector2 = Vector2.DOWN) -> void:
-	_base_anim = anim
+	match anim:
+		"walk":   _state = State.WALK
+		"attack": _state = State.ATTACK
+		"hurt":   _state = State.HURT
+		"death":  _state = State.DEATH
+		_:        _state = State.IDLE
 	_update_animation(direction)
+
+
+## Apply team color via shader.  Pixels matching marker_color (magenta
+## #FF00FF by default) are replaced by `color` at render time so skin,
+## hair and weapons stay unchanged.
+##
+## Usage:
+##   unit.set_team_color(Color(0.8, 0.1, 0.1))      # red team
+##   unit.set_team_color(Color(0.1, 0.3, 0.8))      # blue team
+##
+## Pass custom marker_color and threshold when the sprite uses a
+## different marker hue or a softer blend is needed:
+##   unit.set_team_color(team_red, marker, 0.08)
+func set_team_color(
+	color: Color,
+	marker: Color = Color(1.0, 0.0, 1.0),
+	threshold: float = 0.05
+) -> void:
+	if animated_sprite == null:
+		return
+
+	var mat := animated_sprite.material as ShaderMaterial
+
+	# Attach shader material on first call
+	if mat == null or mat.shader == null:
+		mat = ShaderMaterial.new()
+		mat.shader = preload("res://shaders/team_color.gdshader")
+		animated_sprite.material = mat
+
+	mat.set_shader_parameter("team_color", color)
+	mat.set_shader_parameter("marker_color", marker)
+	mat.set_shader_parameter("threshold", threshold)
