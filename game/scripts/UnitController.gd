@@ -279,7 +279,6 @@ func die() -> void:
 
 
 var _death_fade_tween: Tween = null
-var _death_cleanup_timer: SceneTreeTimer = null
 
 
 ## Reset from DEATH back to IDLE (test helper).
@@ -288,9 +287,6 @@ func _revive() -> void:
 	if _death_fade_tween and _death_fade_tween.is_valid():
 		_death_fade_tween.kill()
 		_death_fade_tween = null
-	if _death_cleanup_timer:
-		_death_cleanup_timer.timeout.disconnect(_on_death_cleanup)
-		_death_cleanup_timer = null
 	animated_sprite.modulate = Color.WHITE
 	animated_sprite.visible = true
 	_is_dead = false
@@ -302,6 +298,7 @@ func _revive() -> void:
 ## Called when the current animation completes a loop.
 ## ATTACK and HURT auto-transition to IDLE.
 ## DEATH stops on the last frame and fades out the corpse.
+## El nodo NO se elimina — queda invisible para poder revivir con E.
 func _on_animation_looped() -> void:
 	match _state:
 		State.ATTACK, State.HURT:
@@ -309,16 +306,10 @@ func _on_animation_looped() -> void:
 			_update_animation(_last_direction)
 		State.DEATH:
 			animated_sprite.stop()
-			# Fade out + cleanup con timer separado para evitar problemas con tween_callback
+			# Fade out: el cuerpo se desvanece pero el nodo queda vivo
 			_death_fade_tween = create_tween()
 			_death_fade_tween.tween_property(animated_sprite, "modulate:a", 0.0, 1.2).set_delay(0.5)
-			_death_cleanup_timer = get_tree().create_timer(2.5)
-			_death_cleanup_timer.timeout.connect(_on_death_cleanup)
-
-
-func _on_death_cleanup() -> void:
-	if is_instance_valid(self):
-		queue_free()
+			# No hay queue_free — se deja vivo para poder revivir siempre
 
 
 ## Switch the base animation type by string name (backwards-compat).
