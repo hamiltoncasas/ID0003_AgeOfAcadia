@@ -272,8 +272,17 @@ func die() -> void:
 	_update_animation(_last_direction)
 
 
+var _death_fade_tween: Tween = null
+
+
 ## Reset from DEATH back to IDLE (test helper).
 func _revive() -> void:
+	# Cancel fade-out si había empezado
+	if _death_fade_tween and _death_fade_tween.is_valid():
+		_death_fade_tween.kill()
+		_death_fade_tween = null
+	animated_sprite.modulate.a = 1.0
+	animated_sprite.visible = true
 	_is_dead = false
 	_state = State.IDLE
 	animated_sprite.rotation = 0.0
@@ -282,7 +291,7 @@ func _revive() -> void:
 
 ## Called when the current animation completes a loop.
 ## ATTACK and HURT auto-transition to IDLE.
-## DEATH stops on the last frame (character stays lying on the ground).
+## DEATH stops on the last frame and fades out the corpse.
 func _on_animation_looped() -> void:
 	match _state:
 		State.ATTACK, State.HURT:
@@ -290,6 +299,11 @@ func _on_animation_looped() -> void:
 			_update_animation(_last_direction)
 		State.DEATH:
 			animated_sprite.stop()
+			# Desvanecer el cuerpo después de una pausa
+			_death_fade_tween = create_tween()
+			_death_fade_tween.tween_interval(0.8)
+			_death_fade_tween.tween_property(animated_sprite, "modulate:a", 0.0, 1.0)
+			_death_fade_tween.tween_callback(queue_free)
 
 
 ## Switch the base animation type by string name (backwards-compat).
