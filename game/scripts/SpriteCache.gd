@@ -80,7 +80,7 @@ func _categorize_entorno_subdir(name: String) -> String:
 			return "cliff"
 		"roble", "pino", "arce", "abedul", "sauce", "cipres":
 			return "trees"
-		"rocas", "rocas_bloqueo":
+		"rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena":
 			return "rocks"
 		"flores", "juncos", "lirios_acuaticos", "arbustos", "hongos", "bambu", "cactus", "palmera":
 			return "decorations"

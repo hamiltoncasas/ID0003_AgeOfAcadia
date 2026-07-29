@@ -3,10 +3,10 @@ class_name ObjectPlacer
 
 const _BIOME_SUBDIRS: Dictionary = {
 	0: [],                                  # WATER
-	1: ["cactus", "palmera", "rocas", "rocas_bloqueo"],             # SAND
+	1: ["cactus", "palmera", "rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],             # SAND
 	2: ["roble", "pino", "arce", "abedul", "sauce", "cipres", "palmera", "flores", "arbustos", "hongos", "bambu"],  # GRASS
-	3: ["rocas", "rocas_bloqueo", "arbustos", "roble", "pino"],     # DIRT
-	4: ["rocas", "rocas_bloqueo"],                                   # MOUNTAIN
+	3: ["rocas", "rocas_bloqueo", "arbustos", "roble", "pino", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],     # DIRT
+	4: ["rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],                                   # MOUNTAIN
 }
 
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]
@@ -99,7 +99,9 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			if tex_path.contains("/roble/") or tex_path.contains("/pino/") or tex_path.contains("/arce/") or tex_path.contains("/abedul/") or tex_path.contains("/sauce/") or tex_path.contains("/cipres/") or tex_path.contains("/palmera/") or tex_path.contains("/bambu/"):
 				scale_val = 2.5
 			elif tex_path.contains("/rocas") or tex_path.contains("/cactus/"):
-				scale_val = 1.5
+				scale_val = 2.0  # Rocks bigger
+			elif tex_path.contains("/mina_") or tex_path.contains("/dorado/"):
+				scale_val = 2.5  # Mines bigger
 			elif tex_path.contains("/flores/") or tex_path.contains("/arbustos/") or tex_path.contains("/hongos/"):
 				scale_val = 1.0
 			elif tex_path.contains("/juncos/") or tex_path.contains("/lirios_acuaticos/"):
@@ -111,10 +113,12 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			# Base shadow — semi-transparent rectangle at ground level
 			# Simulates 3D object footprint in isometric space
 			var col_size: Vector2
-			if scale_val >= 2.0:
-				col_size = Vector2(48, 80)   # Trees: wide + TALL for isometric
+			if scale_val >= 2.5:
+				col_size = Vector2(64, 96)   # Trees & mines: biggest
+			elif scale_val >= 1.8:
+				col_size = Vector2(48, 80)   # Rocks: medium-large
 			elif scale_val >= 1.2:
-				col_size = Vector2(40, 64)   # Rocks: medium + tall
+				col_size = Vector2(40, 64)   # Medium
 			else:
 				col_size = Vector2(24, 40)   # Small decorations
 
