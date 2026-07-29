@@ -4,7 +4,7 @@ extends Camera2D
 @export var follow_target: Node2D = null
 @export var drag_button: int = MOUSE_BUTTON_MIDDLE
 
-const ZOOM_MIN: float = 0.3
+const ZOOM_MIN: float = 0.08
 const ZOOM_MAX: float = 3.0
 const ZOOM_STEP: float = 0.1
 const FOLLOW_MARGIN_RATIO: float = 0.25

@@ -62,6 +62,15 @@ func _ready():
 		for warn in place_result.warnings:
 			push_warning("MapManager: ", warn)
 
+	# Clear objects around spawn so player starts in open field
+	var spawn_cell := Vector2i(map_width / 2, map_height / 2)
+	var clear_radius := 4
+	for c in object_container.get_children():
+		if c is StaticBody2D:
+			var obj_cell := world_to_cell(c.position)
+			if abs(obj_cell.x - spawn_cell.x) <= clear_radius and abs(obj_cell.y - spawn_cell.y) <= clear_radius:
+				c.queue_free()
+
 	# Player INSIDE ObjectContainer for proper isometric y-sort
 	# No z_index override — y_sort determines depth naturally
 	var player_scene := preload("res://map/units/PlayerUnit.tscn")

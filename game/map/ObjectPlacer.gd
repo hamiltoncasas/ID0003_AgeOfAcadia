@@ -12,19 +12,19 @@ const _BIOME_SUBDIRS: Dictionary = {
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]
 
 const _DENSITY_MIN: Dictionary = {
-	0: 0.02,
-	1: 0.04,
-	2: 0.15,
-	3: 0.08,
-	4: 0.10,
+	0: 0.005,
+	1: 0.02,
+	2: 0.06,
+	3: 0.03,
+	4: 0.04,
 }
 
 const _DENSITY_MAX: Dictionary = {
-	0: 0.05,
-	1: 0.08,
-	2: 0.25,
-	3: 0.12,
-	4: 0.18,
+	0: 0.015,
+	1: 0.04,
+	2: 0.12,
+	3: 0.06,
+	4: 0.08,
 }
 
 const _JITTER_X: float = 8.0
