@@ -258,11 +258,17 @@ func _spawn_arrow(target_pos: Vector2 = Vector2.INF) -> void:
 
 
 ## Start hurt animation. Loops once then auto-returns to IDLE.
+## Shows a red flash for immediate visual feedback.
 func hurt() -> void:
 	if _is_dead:
 		return
 	_state = State.HURT
 	_update_animation(_last_direction)
+	# Flash rojo para que el hurt sea inmediatamente visible
+	animated_sprite.modulate = Color(1.0, 0.4, 0.4)
+	var tween := create_tween()
+	tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.3)
+	tween.set_trans(Tween.TRANS_SINE)
 
 
 ## Start death animation. Terminal — locks all movement input.
@@ -273,6 +279,7 @@ func die() -> void:
 
 
 var _death_fade_tween: Tween = null
+var _death_cleanup_timer: SceneTreeTimer = null
 
 
 ## Reset from DEATH back to IDLE (test helper).
@@ -281,7 +288,10 @@ func _revive() -> void:
 	if _death_fade_tween and _death_fade_tween.is_valid():
 		_death_fade_tween.kill()
 		_death_fade_tween = null
-	animated_sprite.modulate.a = 1.0
+	if _death_cleanup_timer:
+		_death_cleanup_timer.timeout.disconnect(_on_death_cleanup)
+		_death_cleanup_timer = null
+	animated_sprite.modulate = Color.WHITE
 	animated_sprite.visible = true
 	_is_dead = false
 	_state = State.IDLE
@@ -299,11 +309,16 @@ func _on_animation_looped() -> void:
 			_update_animation(_last_direction)
 		State.DEATH:
 			animated_sprite.stop()
-			# Desvanecer el cuerpo después de una pausa
+			# Fade out + cleanup con timer separado para evitar problemas con tween_callback
 			_death_fade_tween = create_tween()
-			_death_fade_tween.tween_interval(0.8)
-			_death_fade_tween.tween_property(animated_sprite, "modulate:a", 0.0, 1.0)
-			_death_fade_tween.tween_callback(queue_free)
+			_death_fade_tween.tween_property(animated_sprite, "modulate:a", 0.0, 1.2).set_delay(0.5)
+			_death_cleanup_timer = get_tree().create_timer(2.5)
+			_death_cleanup_timer.timeout.connect(_on_death_cleanup)
+
+
+func _on_death_cleanup() -> void:
+	if is_instance_valid(self):
+		queue_free()
 
 
 ## Switch the base animation type by string name (backwards-compat).
