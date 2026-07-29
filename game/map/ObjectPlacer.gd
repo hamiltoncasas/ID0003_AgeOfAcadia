@@ -108,17 +108,31 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			sprite.scale = Vector2(scale_val, scale_val)
 			body.add_child(sprite)
 
+			# Base shadow — semi-transparent rectangle at ground level
+			# Simulates 3D object footprint in isometric space
+			var col_size: Vector2
+			if scale_val >= 2.0:
+				col_size = Vector2(48, 80)   # Trees: wide + TALL for isometric
+			elif scale_val >= 1.2:
+				col_size = Vector2(40, 64)   # Rocks: medium + tall
+			else:
+				col_size = Vector2(24, 40)   # Small decorations
+
+			var shadow := Polygon2D.new()
+			shadow.name = "Shadow"
+			shadow.color = Color(0, 0, 0, 0.25)
+			shadow.polygon = PackedVector2Array([
+				Vector2(-col_size.x / 2.0, 0),
+				Vector2(col_size.x / 2.0, 0),
+				Vector2(col_size.x / 2.0, col_size.y),
+				Vector2(-col_size.x / 2.0, col_size.y),
+			])
+			shadow.z_index = -1  # Behind everything on this body
+			body.add_child(shadow)
+
 			var collision := CollisionShape2D.new()
 			var shape := RectangleShape2D.new()
-			# BIG collision boxes for isometric depth overlap
-			# Y is EXTRA tall because isometric depth compression means
-			# objects at same screen Y may have very different world Y
-			if scale_val >= 2.0:
-				shape.size = Vector2(48, 80)  # Trees: wide + TALL for isometric
-			elif scale_val >= 1.2:
-				shape.size = Vector2(40, 64)  # Rocks: medium + tall
-			else:
-				shape.size = Vector2(24, 40)  # Small decorations
+			shape.size = col_size
 			collision.shape = shape
 			collision.position = Vector2(0, 0)
 			body.add_child(collision)

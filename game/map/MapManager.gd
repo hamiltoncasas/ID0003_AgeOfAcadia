@@ -62,16 +62,13 @@ func _ready():
 		for warn in place_result.warnings:
 			push_warning("MapManager: ", warn)
 
-	# Player as DIRECT child of MapManager (NOT in ObjectContainer)
-	# z_index=10 ensures ALWAYS visible regardless of y-sort
-	# Physics collision still works across the tree
+	# Player INSIDE ObjectContainer for proper isometric y-sort
+	# No z_index override — y_sort determines depth naturally
 	var player_scene := preload("res://map/units/PlayerUnit.tscn")
 	var player := player_scene.instantiate()
 	player.position = Vector2(0, 12800)
-	player.z_index = 10
-	player.z_as_relative = false
 	player.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
-	add_child(player)
+	object_container.add_child(player)
 
 
 
