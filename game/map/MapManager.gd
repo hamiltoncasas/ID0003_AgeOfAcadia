@@ -6,8 +6,8 @@ const _ArrowPointer = preload("res://map/ArrowPointer.gd")
 const _CellSelector = preload("res://map/CellSelector.gd")
 
 @export var map_seed: int = 12345
-@export var map_width: int = 400
-@export var map_height: int = 400
+@export var map_width: int = 120
+@export var map_height: int = 120
 
 var biome_map: Array = []
 var elev_map: Array = []
@@ -66,7 +66,7 @@ func _ready():
 	# No z_index override — y_sort determines depth naturally
 	var player_scene := preload("res://map/units/PlayerUnit.tscn")
 	var player := player_scene.instantiate()
-	player.position = Vector2(0, 12800)
+	player.position = Vector2(0, 3840)
 	player.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	object_container.add_child(player)
 
@@ -76,6 +76,15 @@ func _ready():
 	if camera:
 		camera.map_size = Vector2i(map_width, map_height)
 		camera.follow_target = player
+
+	var minimap_scene = preload("res://map/Minimap.tscn")
+	var minimap = minimap_scene.instantiate()
+	minimap.map_manager = self
+	minimap.biome_map = result.biome_map
+	minimap.map_width = map_width
+	minimap.map_height = map_height
+	minimap.player = player
+	add_child(minimap)
 
 	var selector := _CellSelector.new()
 	selector.name = "CellSelector"

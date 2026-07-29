@@ -1,6 +1,6 @@
 extends Camera2D
 
-@export var map_size: Vector2i = Vector2i(400, 400)
+@export var map_size: Vector2i = Vector2i(120, 120)
 @export var follow_target: Node2D = null
 @export var drag_button: int = MOUSE_BUTTON_MIDDLE
 

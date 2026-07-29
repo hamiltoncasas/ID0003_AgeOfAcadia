@@ -110,29 +110,25 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			sprite.scale = Vector2(scale_val, scale_val)
 			body.add_child(sprite)
 
-			# Base shadow — semi-transparent rectangle at ground level
-			# Simulates 3D object footprint in isometric space
+			# Shadow sprite using object silhouette
+			var shadow := Sprite2D.new()
+			shadow.name = "Shadow"
+			shadow.texture = tex
+			shadow.offset = Vector2(0, 0)
+			shadow.scale = Vector2(scale_val, scale_val)
+			shadow.self_modulate = Color(0, 0, 0, 0.25)
+			shadow.z_index = -1
+			body.add_child(shadow)
+
 			var col_size: Vector2
 			if scale_val >= 2.5:
-				col_size = Vector2(64, 96)   # Trees & mines: biggest
+				col_size = Vector2(64, 96)
 			elif scale_val >= 1.8:
-				col_size = Vector2(48, 80)   # Rocks: medium-large
+				col_size = Vector2(48, 80)
 			elif scale_val >= 1.2:
-				col_size = Vector2(40, 64)   # Medium
+				col_size = Vector2(40, 64)
 			else:
-				col_size = Vector2(24, 40)   # Small decorations
-
-			var shadow := Polygon2D.new()
-			shadow.name = "Shadow"
-			shadow.color = Color(0, 0, 0, 0.25)
-			shadow.polygon = PackedVector2Array([
-				Vector2(-col_size.x / 2.0, 0),
-				Vector2(col_size.x / 2.0, 0),
-				Vector2(col_size.x / 2.0, col_size.y),
-				Vector2(-col_size.x / 2.0, col_size.y),
-			])
-			shadow.z_index = -1  # Behind everything on this body
-			body.add_child(shadow)
+				col_size = Vector2(24, 40)
 
 			var collision := CollisionShape2D.new()
 			var shape := RectangleShape2D.new()
