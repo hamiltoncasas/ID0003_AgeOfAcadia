@@ -47,22 +47,9 @@ var _selected: bool = false
 var _selection_ring: Sprite2D = null
 ## Unique unit index for formation/group management
 var unit_index: int = 0
-## Right-click movement system
+## Right-click movement system — simple direct movement
 var _move_target: Vector2 = Vector2.INF
-var _path_waypoints: Array = []
-var _path_index: int = 0
-const MOVE_ARRIVAL_DIST: float = 12.0
-## Navigation
-var _nav: NavigationSystem = null
-
-## Anti-stuck system
-var _stuck_count: int = 0
-var _last_pos: Vector2 = Vector2.ZERO
-var _last_move_dist: float = 0.0
-var _stuck_recoveries: int = 0
-const STUCK_MIN_MOVEMENT: float = 2.0
-const STUCK_FRAME_LIMIT: int = 30
-const MAX_STUCK_RECOVERIES: int = 5
+const MOVE_ARRIVAL_DIST: float = 16.0
 
 ## Health system
 var health: int = 100
@@ -141,47 +128,21 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Right-click handler: A* pathfinding with water avoidance.
 func _move_to(target: Vector2) -> void:
-	# Build nav system on first use
-	if _nav == null and not biome_data.is_empty():
-		_nav = NavigationSystem.new()
-		_nav.build(biome_data)
-		print("Nav system built")
-	
-	# Try A* pathfinding
-	_path_waypoints = []
-	_path_index = 0
-	if _nav != null:
-		_path_waypoints = _nav.find_path(global_position, target)
-		print("Path: ", _path_waypoints.size(), " waypoints")
-	
-	if _path_waypoints.size() >= 2:
-		_path_index = 1
-		_move_target = _path_waypoints[_path_index]
-	elif not _is_water_at(target):
-		# Direct movement to walkable target
-		_move_target = target
-		_path_waypoints = []
-	else:
-		# Target is in water — find nearest walkable cell
-		var nearest = _find_nearest_land(target)
-		if nearest != Vector2.INF:
-			_move_target = nearest
-			_path_waypoints = []
-			print("Redirigido a tierra en ", nearest)
+	# If target is water, redirect to nearest land
+	if _is_water_at(target):
+		var land = _find_nearest_land(target)
+		if land != Vector2.INF:
+			target = land
+			print("Unit ", unit_index, " redirected to land: ", land)
 		else:
-			print("NO HAY TIERRA CERCA — cancelando movimiento")
-			_move_target = Vector2.INF
-			_path_waypoints = []
-			_state = State.IDLE
+			print("Unit ", unit_index, " cannot move — target is water")
 			return
 	
-	_state = State.WALK
-	_stuck_recoveries = 0
-	_stuck_count = 0
-	_last_move_dist = 0.0
-	_last_pos = global_position
+	_move_target = target
+	if _state in [State.IDLE, State.WALK]:
+		_state = State.WALK
 	_spawn_move_pointer(_move_target)
-	print(">>> Unit ", unit_index, " MOVE_TO: target=", target, " first=", _move_target, " path=", _path_waypoints.size())
+	print(">>> Unit ", unit_index, " moving to ", _move_target)
 
 
 func _physics_process(delta: float) -> void:
@@ -191,63 +152,39 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# RTS movement with A* pathfinding + anti-stuck + water avoidance
+	# Simple direct movement: move toward target, no pathfinding, no stuck detection
 	if _move_target != Vector2.INF:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
-			# Water check: don't walk into water
-			if _is_water_at(global_position + dir * 12.0):
-				# Try to slide along water edge with perpendicular direction
-				var perp = Vector2(-dir.y, dir.x)
-				if not _is_water_at(global_position + perp * 12.0):
-					dir = perp
-				elif not _is_water_at(global_position - perp * 12.0):
-					dir = -perp
-				else:
-					# Surrounded by water — skip this waypoint
-					velocity = Vector2.ZERO
-					move_and_slide()
-					_advance_waypoint_or_stop()
-					return  # exit physics_process, handled for this frame
+			# Keep units from walking into water: check if target cell itself is water
+			# (intermediate water crossings are handled by the target check in _move_to)
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
 		else:
-			_reset_stuck()
-			_advance_waypoint_or_stop()
+			velocity = Vector2.ZERO
+			_state = State.IDLE
+			_update_animation(_last_direction)
+			_move_target = Vector2.INF
 	else:
-		_reset_stuck()
 		if _state == State.WALK:
 			_state = State.IDLE
 			_update_animation(_last_direction)
 		velocity = Vector2.ZERO
 
-	# Separation: push away from nearby units (always active, stronger when overlapping)
+	# Gentle separation to avoid clumping
 	var parent = get_parent()
 	if parent:
 		for child in parent.get_children():
 			if child == self or not child is UnitController:
 				continue
 			var d = global_position.distance_to(child.global_position)
-			if d > 0.01 and d < 50.0:
-				var force = (50.0 - d) / 50.0
-				force = force * force * 200.0  # exponential push closer they are
+			if d > 0.01 and d < 40.0:
+				var force = (40.0 - d) * 3.0
 				velocity += (global_position - child.global_position).normalized() * force
 
 	move_and_slide()
-	
-	# Anti-stuck: check if unit is actually moving
-	if _move_target != Vector2.INF:
-		var moved = global_position.distance_squared_to(_last_pos)
-		if moved < STUCK_MIN_MOVEMENT * STUCK_MIN_MOVEMENT:
-			_stuck_count += 1
-		else:
-			_stuck_count = maxi(0, _stuck_count - 2)  # gradual recovery
-		_last_pos = global_position
-		
-		if _stuck_count > STUCK_FRAME_LIMIT:
-			_handle_stuck()
 	
 	# NOTE: elevation y-offset removed — was fighting move_and_slide()
 	# causing vertical movement to be cancelled out. Visual overlays
@@ -411,8 +348,6 @@ func attack(target_pos: Vector2 = Vector2.INF) -> void:
 		return
 	# Stop movement when attacking
 	_move_target = Vector2.INF
-	_path_waypoints = []
-	_path_index = 0
 	velocity = Vector2.ZERO
 	_state = State.ATTACK
 	_update_animation(_last_direction)
@@ -572,50 +507,9 @@ func get_health() -> int:
 func get_max_health() -> int:
 	return max_health
 
-
-## Advance to next waypoint or stop at final destination.
-func _advance_waypoint_or_stop() -> void:
-	if _path_index < _path_waypoints.size() - 1:
-		_path_index += 1
-		_move_target = _path_waypoints[_path_index]
-	else:
-		velocity = Vector2.ZERO
-		_state = State.IDLE
-		_update_animation(_last_direction)
-		_move_target = Vector2.INF
-		_path_waypoints = []
-
-
-## Reset stuck counter.
-func _reset_stuck() -> void:
-	_stuck_count = 0
-	_last_move_dist = 0.0
-
-## Handle stuck — just skip to next waypoint.
-func _handle_stuck() -> void:
-	_stuck_recoveries += 1
-	if _stuck_recoveries % 3 == 1:
-		print("STUCK: skip waypoint (", _stuck_recoveries, ")")
-	
-	# Skip current waypoint
-	if _path_index < _path_waypoints.size() - 1:
-		_path_index += 1
-		_move_target = _path_waypoints[_path_index]
-	else:
-		velocity = Vector2.ZERO
-		_state = State.IDLE
-		_update_animation(_last_direction)
-		_move_target = Vector2.INF
-		_path_waypoints = []
-	
-	_stuck_count = maxi(0, _stuck_count - 15)  # back off, don't chain-stuck
-
-
 ## Stop current movement immediately.
 func stop_movement() -> void:
 	_move_target = Vector2.INF
-	_path_waypoints = []
-	_path_index = 0
 	velocity = Vector2.ZERO
 	if _state in [State.IDLE, State.WALK]:
 		_state = State.IDLE
