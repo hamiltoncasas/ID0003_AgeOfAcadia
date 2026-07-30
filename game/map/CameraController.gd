@@ -26,25 +26,22 @@ func _ready():
 func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		match event.button_index:
-			MOUSE_BUTTON_MIDDLE:
+			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE:
 				if event.pressed:
 					_dragging = true
 					_drag_start = event.position
 					_cam_start = position
 				else:
 					_dragging = false
+			MOUSE_BUTTON_RIGHT:
+				# Right-click is for unit movement — just ignore here
+				pass
 			MOUSE_BUTTON_WHEEL_UP:
 				if event.pressed:
 					_zoom(ZOOM_STEP)
 			MOUSE_BUTTON_WHEEL_DOWN:
 				if event.pressed:
 					_zoom(-ZOOM_STEP)
-			MOUSE_BUTTON_RIGHT:
-				if event.pressed:
-					# Right-click is for unit movement — don't cancel follow
-					# If user wants to free the camera, they use drag or arrow keys
-					pass
-
 	if event is InputEventMouseMotion:
 		if _dragging:
 			var dist = event.position.distance_to(_drag_start)
