@@ -591,30 +591,22 @@ func _reset_stuck() -> void:
 	_stuck_count = 0
 	_last_target_dist = 0.0
 
-## Handle stuck — skip stuck waypoint immediately, teleport if critical.
+## Handle stuck — skip current waypoint, try next one.
 func _handle_stuck() -> void:
 	_stuck_recoveries += 1
-	print("STUCK: recovery ", _stuck_recoveries, " at ", global_position)
+	print("STUCK: ", _stuck_recoveries, " at ", global_position)
 	
-	if _stuck_recoveries >= MAX_STUCK_RECOVERIES:
-		# Teleport to target if we're really stuck
-		print("STUCK: teleporting to ", _move_target)
-		global_position = _move_target
-		_stuck_recoveries = 0
-		_stuck_count = 0
-		return
-	
-	# Skip current waypoint — advance to next
+	# Skip current waypoint, advance to next
 	if _path_index < _path_waypoints.size() - 1:
 		_path_index += 1
 		_move_target = _path_waypoints[_path_index]
-		print("STUCK: skipped to waypoint ", _path_index)
 	else:
-		# No more waypoints — teleport to final target
-		global_position = _move_target
+		# No more waypoints — stop trying
+		velocity = Vector2.ZERO
+		_state = State.IDLE
+		_update_animation(_last_direction)
 		_move_target = Vector2.INF
 		_path_waypoints = []
-		print("STUCK: teleported to final")
 	
 	_stuck_count = 0
 

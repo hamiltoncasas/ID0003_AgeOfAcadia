@@ -181,6 +181,13 @@ func generate(seed, w, h, ts):
 				2: pc += 1
 	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count, " contours: ", contour_count)
 	print("Biomes: water=", wc, " desert=", dc, " plain=", pc)
+	# Debug: check a few water cells' biome values
+	var dw = 0
+	for yy in range(0, h, 50):
+		for xx in range(0, w, 50):
+			if biome_map[yy][xx] == 0:
+				dw += 1
+	print("Water sample: ", dw, " cells at 50px grid")
 	return [layer, contours, heights, elev_map, biome_map]
 
 
