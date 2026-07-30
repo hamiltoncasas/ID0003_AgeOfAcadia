@@ -90,9 +90,10 @@ func generate(seed, w, h, ts):
 				sid = 6  # deep water (lakes, sea)
 			elif hval < 0.0:
 				sid = 5  # shallow water (shore/lake edge)
-			# Shore transition zone between water and land — use plain tiles (no objects)
+			# Shore transition zone between water and land — grass tiles but biome = water
+			# so ObjectPlacer places NO objects here (prevents trees "in water" look)
 			elif hval < 0.06:
-				sid = 0  # grass (shore, no desert objects)
+				sid = 0  # grass tiles visually
 			# Desert: dry areas above beach level
 			elif moist < -0.2 and hval < 0.4:
 				sid = 2  # sand (desert)
@@ -100,14 +101,17 @@ func generate(seed, w, h, ts):
 			else:
 				sid = 0  # grass (plain)
 
-			# Note: sid 1 (dirt) reserved for future elevation-based transitions
-
-			# Convert sid to biome index: 0/1=plain, 2=desert, 5/6=water
+			# Convert sid to biome index for ObjectPlacer:
+			#   sid 5/6 → biome 0 (water) — no objects
+			#   sid 2   → biome 1 (desert) — cacti, rocks
+			#   sid 0   → biome 2 (plain) unless it's shore zone
 			var biome_idx = sid
 			if biome_idx >= 5:
 				biome_idx = 0  # water
 			elif biome_idx == 2:
 				biome_idx = 1  # desert
+			elif hval < 0.06:
+				biome_idx = 0  # shore zone = water for ObjectPlacer (no objects)
 			else:
 				biome_idx = 2  # plain
 			biome_map[y][x] = biome_idx
