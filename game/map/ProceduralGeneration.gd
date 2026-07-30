@@ -51,7 +51,7 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
 
-	# 3 elevation layers — y_sort removed from parent, so offsets work now
+	# 3 elevation layers with offsets for terrain relief
 	for elev in 3:
 		var layer := TileMapLayer.new()
 		layer.name = "Elevation" + str(elev)
@@ -72,15 +72,12 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 		print("Elevation ", elev, ": ", layer_count, " tiles")
 		layers.append(layer)
 
-	# Restore cliffs at elevation boundaries — removed earlier as suspected cause
-	var cliff_node := _create_cliffs(biome_map, elev_map, width, height)
-
 	return {
 		"success": true,
 		"biome_map": biome_map,
 		"elev_map": elev_map,
 		"layers": layers,
-		"cliff_node": cliff_node,
+		"cliff_node": null,
 		"tile_count": tile_count,
 	}
 
