@@ -266,16 +266,17 @@ func _move_selected_units():
 		return
 	
 	var count = _selected_units.size()
-	var spread = 60.0  # distance between units in formation
-	var angle_offset = 0.0
+	# Spread units in a wide arc so they don't clump
+	var spread = 80.0 + count * 10.0  # wider spread for more units
 	
 	for i in range(count):
 		var unit = _selected_units[i]
 		if not unit or not unit.has_method("_move_to"):
 			continue
-		# Fan-out formation: spread units in an arc around the click point
-		var a = angle_offset + (float(i) / count - 0.5) * 1.5
-		var offset = Vector2(cos(a), sin(a) * 0.5) * spread
+		# Fan-out: evenly distributed along an arc
+		var t = float(i) / max(count - 1, 1) - 0.5
+		var a = t * 1.8  # 1.8 radian arc (~100 degrees)
+		var offset = Vector2(cos(a) * spread, sin(a) * spread * 0.4)
 		var target = mouse_world + offset
 		unit._move_to(target)
 

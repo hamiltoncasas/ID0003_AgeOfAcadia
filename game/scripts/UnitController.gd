@@ -204,6 +204,17 @@ func _physics_process(delta: float) -> void:
 			_update_animation(_last_direction)
 		velocity = Vector2.ZERO
 
+	# Separation: add gentle push from nearby units to prevent clumping
+	if _move_target == Vector2.INF:
+		var parent = get_parent()
+		if parent:
+			for child in parent.get_children():
+				if child == self or not child is UnitController:
+					continue
+				var d = global_position.distance_to(child.global_position)
+				if d < 40.0 and d > 0.01:
+					velocity += (global_position - child.global_position).normalized() * (40.0 - d) * 2.0
+
 	move_and_slide()
 	
 	# Anti-stuck: check if we're actually moving
