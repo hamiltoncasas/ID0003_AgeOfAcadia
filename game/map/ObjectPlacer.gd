@@ -3,8 +3,8 @@ class_name ObjectPlacer
 
 const _BIOME_SUBDIRS: Dictionary = {
 	0: [],                                  # WATER — nothing
-	1: ["cactus", "palmera", "rocas"],      # DESERT — just essentials
-	2: ["roble", "pino", "flores", "arbustos", "rocas"],  # PLAIN — just essentials
+	1: ["cactus", "palmera", "rocas", "mina_oro", "mina_piedra", "mina_oro_pequena", "mina_piedra_pequena"],  # DESERT
+	2: ["roble", "pino", "flores", "arbustos", "rocas", "mina_oro", "mina_piedra", "mina_oro_pequena", "mina_piedra_pequena"],  # PLAIN
 }
 
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]

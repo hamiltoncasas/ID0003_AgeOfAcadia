@@ -151,17 +151,17 @@ func _generate_minimap(mm):
 func _add_action_panel():
 	var vp = _get_vp()
 	
-	# Panel backdrop — embedded in bottom bar area
+	# Panel backdrop — embedded in bottom bar area, ALWAYS visible
 	_action_panel = ColorRect.new()
 	_action_panel.name = "ActionPanel"
 	_action_panel.color = Color(0.12, 0.08, 0.05, 0.9)
-	_action_panel.size = Vector2(280, 46)
-	_action_panel.position = Vector2(vp.x / 2.0 - 140, vp.y - 48)
-	_action_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	_action_panel.visible = false
+	_action_panel.size = Vector2(300, 46)
+	_action_panel.position = Vector2(vp.x / 2.0 - 150, vp.y - 48)
+	_action_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_action_panel.visible = true
 	add_child(_action_panel)
 	
-	# Title + Health inline
+	# Title — always visible
 	var title = Label.new()
 	title.name = "PanelTitle"
 	title.text = "ARCHER"
@@ -171,7 +171,7 @@ func _add_action_panel():
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(title)
 	
-	# Compact health bar
+	# Health bar — always visible
 	var hp_bg = ColorRect.new()
 	hp_bg.name = "PanelHPBG"
 	hp_bg.color = Color(0.15, 0.05, 0.05, 0.8)
@@ -195,26 +195,27 @@ func _add_action_panel():
 	hp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(hp_lbl)
 	
-	# Compact action buttons
-	var actions = [
+	# Action buttons — hidden by default, shown when unit selected
+	var actions_data = [
 		{"label": "⚔ Atk", "action": "attack"},
 		{"label": "✋ Stop", "action": "stop"},
 		{"label": "🏹 Fire", "action": "fire"},
 	]
 	var bx = 120
 	var by = 4
-	for act in actions:
+	for act_data in actions_data:
 		var btn = ColorRect.new()
 		btn.color = Color(0.25, 0.18, 0.12, 0.9)
 		btn.size = Vector2(78, 26)
 		btn.position = Vector2(bx, by)
 		btn.mouse_filter = Control.MOUSE_FILTER_STOP
-		btn.set_meta("action", act["action"])
-		btn.gui_input.connect(_on_action_btn_click.bind(act["action"]))
+		btn.set_meta("action", act_data["action"])
+		btn.gui_input.connect(_on_action_btn_click.bind(act_data["action"]))
+		btn.visible = false  # hidden until unit selected
 		_action_panel.add_child(btn)
 		
 		var lbl = Label.new()
-		lbl.text = act["label"]
+		lbl.text = act_data["label"]
 		lbl.add_theme_color_override("font_color", Color(0.95, 0.9, 0.8))
 		lbl.add_theme_font_size_override("font_size", 11)
 		lbl.position = Vector2(6, 4)
@@ -256,32 +257,32 @@ func _process(_delta):
 	# Update player marker on minimap
 	_update_player_marker()
 	
-	# Show action panel when player is selected
+	# Show action buttons when player is selected (panel itself always visible)
 	if player_ref and player_ref.has_method("is_selected"):
 		var sel = player_ref.is_selected()
 		if sel != _panel_visible:
 			_panel_visible = sel
-			if _action_panel:
-				_action_panel.visible = sel
-		# Update health display
-		if sel and _action_panel and _action_panel.visible:
-			var hp_fill = _action_panel.get_node_or_null("PanelHPFill")
-			var hp_lbl = _action_panel.get_node_or_null("PanelHPLabel")
-			if hp_fill and hp_lbl and player_ref.has_method("get_health"):
-				var hp = player_ref.get_health()
-				var max_hp = player_ref.get_max_health()
-				var ratio = float(hp) / max_hp
-				hp_fill.size.x = 100.0 * ratio
-				if ratio > 0.6:
-					hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
-				elif ratio > 0.3:
-					hp_fill.color = Color(0.9, 0.8, 0.2, 0.9)
-				else:
-					hp_fill.color = Color(0.9, 0.2, 0.2, 0.9)
-				hp_lbl.text = str(hp) + "/" + str(max_hp)
-	# Reposition action panel (bottom bar area)
-	if _action_panel and _action_panel.visible:
-		_action_panel.position = Vector2(vp.x / 2.0 - 140, vp.y - 48)
+			for btn in _panel_buttons:
+				btn.visible = sel
+		# Update health display (always — panel is always visible)
+	if _action_panel and player_ref and player_ref.has_method("get_health"):
+		var hp_fill = _action_panel.get_node_or_null("PanelHPFill")
+		var hp_lbl = _action_panel.get_node_or_null("PanelHPLabel")
+		if hp_fill and hp_lbl:
+			var hp = player_ref.get_health()
+			var max_hp = player_ref.get_max_health()
+			var ratio = float(hp) / max_hp
+			hp_fill.size.x = 80.0 * ratio
+			if ratio > 0.6:
+				hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
+			elif ratio > 0.3:
+				hp_fill.color = Color(0.9, 0.8, 0.2, 0.9)
+			else:
+				hp_fill.color = Color(0.9, 0.2, 0.2, 0.9)
+			hp_lbl.text = str(hp) + "/" + str(max_hp)
+	# Reposition action panel (bottom bar area, always visible)
+	if _action_panel:
+		_action_panel.position = Vector2(vp.x / 2.0 - 150, vp.y - 48)
 
 
 ## Handle action panel button clicks.
