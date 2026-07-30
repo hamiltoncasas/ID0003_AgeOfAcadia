@@ -151,17 +151,6 @@ func _move_to(target: Vector2) -> void:
 	print(">>> MOVE_TO: target=", target, " pos=", global_position)
 
 
-## Build navigation graph from biome data (lazy, once).
-func _build_nav_if_needed() -> void:
-	if _nav != null:
-		return
-	if biome_data.is_empty():
-		return
-	_nav = NavigationSystem.new()
-	_nav.build(biome_data)
-	print("Nav system built: ", biome_data.size(), " rows")
-
-
 func _physics_process(delta: float) -> void:
 	# DEATH locks all movement input
 	if _is_dead:
@@ -500,19 +489,6 @@ func get_health() -> int:
 
 func get_max_health() -> int:
 	return max_health
-
-
-## Advance to next waypoint in the path, or stop if at end.
-func _advance_path() -> void:
-	_path_index += 1
-	if _path_index < _path.size():
-		_move_target = _path[_path_index]
-	else:
-		velocity = Vector2.ZERO
-		_state = State.IDLE
-		_update_animation(_last_direction)
-		_move_target = Vector2.INF
-		_path = []
 
 
 ## Stop current movement immediately.
