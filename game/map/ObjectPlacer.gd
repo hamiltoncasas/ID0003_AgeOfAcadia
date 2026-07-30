@@ -2,9 +2,9 @@ extends RefCounted
 class_name ObjectPlacer
 
 const _BIOME_SUBDIRS: Dictionary = {
-	0: [],                                  # WATER — nothing in water
-	1: ["cactus", "palmera", "rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],  # DESERT
-	2: ["roble", "pino", "arce", "abedul", "sauce", "cipres", "palmera", "flores", "arbustos", "hongos", "bambu", "rocas", "rocas_bloqueo"],  # PLAIN
+	0: [],                                  # WATER — nothing
+	1: ["cactus", "palmera", "rocas"],      # DESERT — just essentials
+	2: ["roble", "pino", "flores", "arbustos", "rocas"],  # PLAIN — just essentials
 }
 
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]
@@ -240,14 +240,14 @@ func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGen
 	var grounders: Array = []
 	for tex in decor_pool:
 		var path: String = tex.resource_path
-		# Only use flowers and small bushes for ground cover
-		if path.contains("/flores/") or path.contains("/hongos/"):
+		# Only use flowers for ground cover
+		if path.contains("/flores/"):
 			grounders.append(tex)
 	if grounders.is_empty():
 		return 0
 
 	var count := 0
-	var density: float = 0.04  # ~4% of grass cells
+	var density: float = 0.03  # ~3% of plain cells
 
 	for y in height:
 		for x in width:
