@@ -47,9 +47,12 @@ var _selected: bool = false
 var _selection_ring: Sprite2D = null
 ## Unique unit index for formation/group management
 var unit_index: int = 0
-## Right-click movement system — simple direct movement
+## Right-click movement system — A* pathfinding for water avoidance
 var _move_target: Vector2 = Vector2.INF
-const MOVE_ARRIVAL_DIST: float = 16.0
+var _path_waypoints: Array = []
+var _path_index: int = 0
+var _nav: NavigationSystem = null
+const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
 var health: int = 100
@@ -128,21 +131,37 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Right-click handler: A* pathfinding with water avoidance.
 func _move_to(target: Vector2) -> void:
-	# If target is water, redirect to nearest land
+	# Build nav system once
+	if _nav == null and not biome_data.is_empty():
+		_nav = NavigationSystem.new()
+		_nav.build(biome_data)
+		print("Nav built for unit ", unit_index)
+	
+	# Find A* path avoiding water (target may be redirected to nearest land)
+	var adjusted = target
 	if _is_water_at(target):
 		var land = _find_nearest_land(target)
 		if land != Vector2.INF:
-			target = land
-			print("Unit ", unit_index, " redirected to land: ", land)
+			adjusted = land
 		else:
-			print("Unit ", unit_index, " cannot move — target is water")
+			print("Unit ", unit_index, ": target is water, no land nearby")
 			return
 	
-	_move_target = target
+	_path_waypoints = []
+	_path_index = 0
+	if _nav != null:
+		_path_waypoints = _nav.find_path(global_position, adjusted)
+	
+	if _path_waypoints.size() >= 2:
+		_path_index = 1
+		_move_target = _path_waypoints[_path_index]
+	else:
+		_move_target = adjusted
+	
 	if _state in [State.IDLE, State.WALK]:
 		_state = State.WALK
 	_spawn_move_pointer(_move_target)
-	print(">>> Unit ", unit_index, " moving to ", _move_target)
+	print(">>> Unit ", unit_index, " -> ", _move_target, " (", _path_waypoints.size(), " waypoints)")
 
 
 func _physics_process(delta: float) -> void:
@@ -152,21 +171,24 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# Simple direct movement: move toward target, no pathfinding, no stuck detection
+	# Movement: follow A* path waypoints (path avoids water)
 	if _move_target != Vector2.INF:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
-			# Keep units from walking into water: check if target cell itself is water
-			# (intermediate water crossings are handled by the target check in _move_to)
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
 		else:
-			velocity = Vector2.ZERO
-			_state = State.IDLE
-			_update_animation(_last_direction)
-			_move_target = Vector2.INF
+			# Reached waypoint — advance to next
+			if _path_index < _path_waypoints.size() - 1:
+				_path_index += 1
+				_move_target = _path_waypoints[_path_index]
+			else:
+				velocity = Vector2.ZERO
+				_state = State.IDLE
+				_update_animation(_last_direction)
+				_move_target = Vector2.INF
 	else:
 		if _state == State.WALK:
 			_state = State.IDLE
