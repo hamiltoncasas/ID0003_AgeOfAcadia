@@ -50,14 +50,14 @@ func _generate():
 	var manifest_path = "res://sprites/infanteria/arquero/arquero_manifest.json"
 	var unit_sprites = UnitSprites.load_from_manifest(manifest_path)
 	
-	# Starting positions in a line formation
+	# Starting positions in a line formation (offset from center valley)
 	var start_positions = [
-		Vector2(-100, 3400),
-		Vector2(0, 3500),
-		Vector2(100, 3600),
-		Vector2(-50, 3550),
-		Vector2(50, 3450),
-		Vector2(-150, 3500)
+		Vector2(-200, 2000),
+		Vector2(0, 2000),
+		Vector2(200, 2000),
+		Vector2(-100, 2100),
+		Vector2(100, 2100),
+		Vector2(-300, 2050)
 	]
 	
 	for i in range(6):
