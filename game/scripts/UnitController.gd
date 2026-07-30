@@ -266,14 +266,17 @@ func _get_elevation_offset(pos: Vector2) -> float:
 func _is_water_at(pos: Vector2) -> bool:
 	if biome_data.is_empty():
 		return false
-	# Convert world pos to tile coords
 	var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
 	var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
-	# Convert tile coords to loop coords
 	var cx = int(round(px)) - _cell_ox
 	var cy = int(round(py)) - _cell_oy
 	if cx >= 0 and cy >= 0 and cy < biome_data.size() and cx < biome_data[cy].size():
-		return biome_data[cy][cx] == 0
+		var val = biome_data[cy][cx]
+		var is_water = (val == 0)
+		# Safety: if value is float (raw noise), treat negative as water
+		if typeof(val) != TYPE_INT and val < 0.0:
+			is_water = true
+		return is_water
 	return false
 
 
