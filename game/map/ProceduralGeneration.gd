@@ -42,7 +42,7 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 		for x in width:
 			var h := noise.get_noise_2d(x, y)
 			biome_map[y][x] = _height_to_biome(h)
-			elev_map[y][x] = mini(_height_to_elevation(h), 2)
+			elev_map[y][x] = _height_to_elevation(h)
 
 	var tile_count := 0
 	var layers: Array = []
@@ -57,6 +57,7 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 		if tile_set:
 			layer.tile_set = tile_set
 
+		var layer_count := 0
 		for y in height:
 			for x in width:
 				if elev_map[y][x] != elev:
@@ -66,7 +67,9 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 				var variant := rng.randi() % 8
 				layer.set_cell(Vector2i(x, y), source_id, Vector2i(variant, 0))
 				tile_count += 1
+				layer_count += 1
 
+		print("Elevation ", elev, ": ", layer_count, " tiles")
 		layers.append(layer)
 
 	var cliff_node := _create_cliffs(biome_map, elev_map, width, height)
@@ -90,7 +93,14 @@ func _height_to_biome(h: float) -> int:
 
 
 func _height_to_elevation(h: float) -> int:
-	return int(floor((h + 1.0) * 1.5))
+	# h ranges from ~-1 to ~1 for Perlin noise
+	# Broader elevation 0 range for more base ground coverage
+	if h < 0.0:
+		return 0
+	elif h < 0.5:
+		return 1
+	else:
+		return 2
 
 
 func _create_cliffs(biome_map: Array, elev_map: Array, width: int, height: int) -> Node2D:
