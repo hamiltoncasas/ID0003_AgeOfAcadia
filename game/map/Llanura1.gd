@@ -10,9 +10,8 @@ func _ready():
 	var seed_val = randi()
 	print("Seed: ", seed_val)
 
-	# Generate 300x300 centered to fill ALL screen corners
 	var gen = load("res://map/ProceduralGeneration.gd").new()
-	var layer = gen.generate(seed_val, 300, 300, ts)
+	var layer = gen.generate(seed_val, 500, 500, ts)
 	if layer:
 		add_child(layer)
 	
