@@ -253,9 +253,11 @@ func _refresh_selection_visuals():
 			unit.set_selected(is_sel)
 
 
-## Move all selected units toward last right-click position in formation.
+## Move all units toward right-click position in formation.
 func _move_selected_units():
-	if _selected_units.is_empty():
+	var units_to_move = _selected_units if not _selected_units.is_empty() else _all_units
+	
+	if units_to_move.is_empty():
 		return
 	
 	var mouse_world = Vector2.ZERO
@@ -265,17 +267,17 @@ func _move_selected_units():
 	else:
 		return
 	
-	var count = _selected_units.size()
-	# Spread units in a wide arc so they don't clump
-	var spread = 80.0 + count * 10.0  # wider spread for more units
+	var count = units_to_move.size()
+	var spread = 80.0 + count * 10.0
+	
+	print("Moving ", count, " units to ", mouse_world)
 	
 	for i in range(count):
-		var unit = _selected_units[i]
+		var unit = units_to_move[i]
 		if not unit or not unit.has_method("_move_to"):
 			continue
-		# Fan-out: evenly distributed along an arc
 		var t = float(i) / max(count - 1, 1) - 0.5
-		var a = t * 1.8  # 1.8 radian arc (~100 degrees)
+		var a = t * 1.8
 		var offset = Vector2(cos(a) * spread, sin(a) * spread * 0.4)
 		var target = mouse_world + offset
 		unit._move_to(target)

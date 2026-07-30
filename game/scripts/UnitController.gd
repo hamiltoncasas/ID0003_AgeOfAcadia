@@ -181,7 +181,7 @@ func _move_to(target: Vector2) -> void:
 	_last_move_dist = 0.0
 	_last_pos = global_position
 	_spawn_move_pointer(_move_target)
-	print(">>> MOVE_TO: target=", target, " first_waypoint=", _move_target)
+	print(">>> Unit ", unit_index, " MOVE_TO: target=", target, " first=", _move_target, " path=", _path_waypoints.size())
 
 
 func _physics_process(delta: float) -> void:
