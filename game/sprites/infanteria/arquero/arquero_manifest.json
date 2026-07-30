@@ -61,31 +61,36 @@
       "animation": "walk",
       "direction": "front",
       "file": "arquero_walk_front.png",
-      "frames": 2
+      "frames": 2,
+      "speed": 1.5
     },
     {
       "animation": "walk",
       "direction": "front_angle",
       "file": "arquero_walk_front_angle.png",
-      "frames": 2
+      "frames": 2,
+      "speed": 1.5
     },
     {
       "animation": "walk",
       "direction": "profile",
       "file": "arquero_walk_profile.png",
-      "frames": 1
+      "frames": 1,
+      "speed": 1.5
     },
     {
       "animation": "walk",
       "direction": "back_angle",
       "file": "arquero_walk_back_angle.png",
-      "frames": 1
+      "frames": 1,
+      "speed": 1.5
     },
     {
       "animation": "walk",
       "direction": "back",
       "file": "arquero_walk_back.png",
-      "frames": 2
+      "frames": 2,
+      "speed": 1.5
     },
     {
       "animation": "attack",

@@ -163,17 +163,11 @@ func _physics_process(delta: float) -> void:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
-			var look_ahead = global_position + dir * 8.0
-			if not _is_water_at(look_ahead):
-				velocity = dir * speed
-				_state = State.WALK
-				_update_animation(dir)
-			else:
-				# Blocked by water
-				velocity = Vector2.ZERO
-				_state = State.IDLE
-				_update_animation(_last_direction)
-				_move_target = Vector2.INF
+			# Only block if currently standing IN water (edge case)
+			# Don't block future steps — let character walk freely
+			velocity = dir * speed
+			_state = State.WALK
+			_update_animation(dir)
 		else:
 			# Arrived
 			velocity = Vector2.ZERO
