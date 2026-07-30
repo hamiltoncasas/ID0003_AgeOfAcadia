@@ -167,10 +167,13 @@ func _move_to(target: Vector2) -> void:
 		if nearest != Vector2.INF:
 			_move_target = nearest
 			_path_waypoints = []
+			print("Redirigido a tierra en ", nearest)
 		else:
-			print("NO LAND TARGET FOUND")
-			_move_target = target
+			print("NO HAY TIERRA CERCA — cancelando movimiento")
+			_move_target = Vector2.INF
 			_path_waypoints = []
+			_state = State.IDLE
+			return
 	
 	_state = State.WALK
 	_stuck_recoveries = 0
@@ -259,7 +262,7 @@ func _find_nearest_land(world: Vector2) -> Vector2:
 	var py = (world.y / 32.0 - world.x / 64.0) / 2.0
 	var cx = int(round(px)) - _cell_ox
 	var cy = int(round(py)) - _cell_oy
-	for r in range(1, 25):
+	for r in range(1, 60):
 		for dx in range(-r, r + 1):
 			for dy in range(-r, r + 1):
 				var nx = cx + dx
@@ -269,7 +272,7 @@ func _find_nearest_land(world: Vector2) -> Vector2:
 						var tile_x = nx + _cell_ox
 						var tile_y = ny + _cell_oy
 						return Vector2((tile_x - tile_y) * 64, (tile_x + tile_y) * 32)
-	return world
+	return Vector2.INF  # signal: no land found
 
 
 ## Get elevation offset at a world position (in pixels).
