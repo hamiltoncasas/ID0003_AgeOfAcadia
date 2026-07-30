@@ -153,7 +153,6 @@ tile_size = Vector2i(128, 64)
 tile_shape = 1
 tile_layout = 1
 tile_offset_axis = 0
-
 sources/0 = SubResource("TileSetAtlasSource_grass")
 sources/1 = SubResource("TileSetAtlasSource_dirt")
 sources/2 = SubResource("TileSetAtlasSource_sand")

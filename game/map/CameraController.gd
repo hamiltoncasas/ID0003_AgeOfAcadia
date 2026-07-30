@@ -20,7 +20,7 @@ func _ready():
 	# Manual follow smoothing via _process, not built-in
 	position_smoothing_enabled = false
 	# Start zoomed out to show most of the 120x120 map
-	zoom = Vector2(0.12, 0.12)
+	zoom = Vector2(0.13, 0.13)
 
 
 func _unhandled_input(event: InputEvent):
