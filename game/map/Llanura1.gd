@@ -10,16 +10,16 @@ func _ready():
 	var seed_val = randi()
 	print("Seed: ", seed_val)
 
-	# Generate 160x160 — fills the screen at zoom 0.12
+	# Generate 300x300 centered to fill ALL screen corners
 	var gen = load("res://map/ProceduralGeneration.gd").new()
-	var layer = gen.generate(seed_val, 160, 160, ts)
+	var layer = gen.generate(seed_val, 300, 300, ts)
 	if layer:
 		add_child(layer)
 	
-	# Center camera on 160x160 grid
+	# Center on 300x300 grid
 	var cam = get_node("Camera2D")
 	if cam:
-		cam.position = Vector2(0, 5120)
+		cam.position = Vector2(0, 9600)
 	
 	print("Ready")
 
