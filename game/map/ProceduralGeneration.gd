@@ -79,6 +79,11 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
 
+	# Cap elevation at 2 so all cells fall into 3 layers (0, 1, 2)
+	for y in height:
+		for x in width:
+			elev_map[y][x] = mini(elev_map[y][x] as int, 2)
+
 	for elev in 3:
 		var layer := TileMapLayer.new()
 		layer.name = "Elevation" + str(elev)
