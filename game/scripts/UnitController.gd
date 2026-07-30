@@ -150,9 +150,9 @@ func _move_to(target: Vector2) -> void:
 			print("WATER MAP unit ", unit_index, ": EMPTY!")
 	
 	# Build nav system once
-	if _nav == null and not biome_data.is_empty():
+	if _nav == null and not _water_map.is_empty():
 		_nav = NavigationSystem.new()
-		_nav.build(biome_data)
+		_nav.build(_water_map)
 		print("Nav built for unit ", unit_index)
 	
 	# Find A* path avoiding water (target may be redirected to nearest land)

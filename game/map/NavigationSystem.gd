@@ -11,23 +11,25 @@ var _height: int = 0
 var _cell_ox: int = -100
 var _cell_oy: int = -100
 
-## Build navigation graph from biome_map.
-## Only walkable cells (biome != 0) are added as nodes.
-func build(biome_map: Array) -> void:
+## Build navigation graph from water_map (boolean: true = water, false = land).
+func build(water_map: Array) -> void:
 	_astar = AStar2D.new()
-	_height = biome_map.size()
+	_height = water_map.size()
 	if _height == 0:
 		return
-	_width = biome_map[0].size()
+	_width = water_map[0].size()
 	if _width == 0:
 		return
 
 	var id := 0
-	# First pass: add all walkable cells
+	# First pass: add all walkable (non-water) cells
 	for y in range(_height):
 		for x in range(_width):
-			var biome = biome_map[y][x] as int
-			if biome != 0:  # not water
+			# Access water_map: true = water (blocked), false = land (walkable)
+			var is_water = water_map[y][x]
+			if is_water is bool and not is_water:
+				_astar.add_point(id, Vector2(x, y))
+			elif is_water is int and is_water == 0:
 				_astar.add_point(id, Vector2(x, y))
 			id += 1
 
@@ -39,12 +41,15 @@ func build(biome_map: Array) -> void:
 	]
 	for y in range(_height):
 		for x in range(_width):
-			if biome_map[y][x] as int != 0:  # walkable
+			var val = water_map[y][x]
+			var walkable = (val is bool and not val) or (val is int and val == 0)
+			if walkable:
 				for n in neighbors:
 					var nx = x + n[0]
 					var ny = y + n[1]
 					if nx >= 0 and nx < _width and ny >= 0 and ny < _height:
-						if biome_map[ny][nx] as int != 0:
+						var nval = water_map[ny][nx]
+						if (nval is bool and not nval) or (nval is int and nval == 0):
 							var nid = ny * _width + nx
 							_astar.connect_points(id, nid, true)
 			id += 1
