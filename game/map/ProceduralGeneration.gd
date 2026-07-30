@@ -52,7 +52,6 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	# Single terrain layer — elevation layers had offset rendering issues
 	var layer := TileMapLayer.new()
 	layer.name = "Terrain"
-	layer.y_sort_enabled = true
 	if tile_set:
 		layer.tile_set = tile_set
 

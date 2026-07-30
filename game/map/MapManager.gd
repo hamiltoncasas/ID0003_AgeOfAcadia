@@ -15,10 +15,12 @@ var object_container: Node2D = null
 
 
 func _ready():
-	y_sort_enabled = true
+	# y_sort_enabled disabled to avoid interfering with TileMapLayer rendering
 	RenderingServer.set_default_clear_color(Color("#4a7c3f"))
 
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
 
 	var tile_set := _build_tileset()
 	if not tile_set:
@@ -36,11 +38,10 @@ func _ready():
 	biome_map = result.biome_map
 	elev_map = result.elev_map
 
-	# No flat base layer — elevation layers (0, 1, 2) already provide
-	# proper per-biome terrain with correct y-offset for relief.
 	var layers = result.layers
 	for layer in layers:
 		add_child(layer)
+		print("Layer class: ", layer.get_class())
 	if result.cliff_node:
 		add_child(result.cliff_node)
 
