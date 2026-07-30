@@ -2,18 +2,21 @@ extends RefCounted
 class_name ProceduralGeneration
 
 ## Generates a procedural isometric terrain map using FLUX.2 pro terrain strips.
-## 7 terrain types, each with 8 center variants in a separate TileSet atlas source.
-## Sources: 0=grass, 1=dirt, 2=sand, 3=path, 4=forest_floor, 5=shallow_water, 6=deep_water
+## All biomes use the grass texture (source 0) with 8 random center variants
+## for consistent, high-quality ground across the entire map.
+## Sources: 0=grass
 
 enum Biome { WATER = 0, SAND = 1, GRASS = 2, DIRT = 3, MOUNTAIN = 4 }
 
 # biome → source_id mapping (matches terrain.tres source order)
+# NOTE: grass (source 0) is the only high-quality texture from FLUX.2 pro.
+# All biomes use grass to ensure consistent look across the entire map.
 const BIOME_SOURCE: Dictionary = {
-	Biome.WATER: 6,     # deep_water
-	Biome.SAND: 2,      # sand
+	Biome.WATER: 0,     # grass (unified)
+	Biome.SAND: 0,      # grass (unified)
 	Biome.GRASS: 0,     # grass
-	Biome.DIRT: 1,      # dirt
-	Biome.MOUNTAIN: 1,  # dirt (best match available)
+	Biome.DIRT: 0,      # grass (unified)
+	Biome.MOUNTAIN: 0,  # grass (unified)
 }
 
 
