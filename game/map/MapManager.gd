@@ -20,11 +20,10 @@ func _ready():
 
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
-	var tile_set := load("res://map/terrain.tres") as TileSet
+	var tile_set := _build_tileset()
 	if not tile_set:
-		push_error("MapManager: Failed to load terrain.tres")
+		push_error("MapManager: Failed to build TileSet")
 		return
-	print("MapManager: terrain.tres loaded, sources: ", tile_set.get_source_count())
 
 	var gen = _ProceduralGeneration.new()
 	var rng := RandomNumberGenerator.new()
@@ -135,6 +134,43 @@ func world_to_cell(pos: Vector2) -> Vector2i:
 
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x - cell.y) * 64, (cell.x + cell.y) * 32)
+
+
+func _build_tileset() -> TileSet:
+	## Build TileSet programmatically — bypass .tres file format issues
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(128, 64)
+	ts.tile_shape = 1  # TILE_SHAPE_ISOMETRIC
+	ts.tile_layout = 1  # TILE_LAYOUT_DIAMOND
+	ts.tile_offset_axis = 0  # TILE_OFFSET_AXIS_HORIZONTAL
+
+	# Load all terrain strips and create sources
+	var terrain_textures := [
+		{ "name": "grass",         "path": "res://sprites/terrain/strips/grass.png",         "source_id": 0 },
+		{ "name": "dirt",          "path": "res://sprites/terrain/strips/dirt.png",          "source_id": 1 },
+		{ "name": "sand",          "path": "res://sprites/terrain/strips/sand.png",          "source_id": 2 },
+		{ "name": "path",          "path": "res://sprites/terrain/strips/path.png",          "source_id": 3 },
+		{ "name": "forest_floor",  "path": "res://sprites/terrain/strips/forest_floor.png",  "source_id": 4 },
+		{ "name": "shallow_water", "path": "res://sprites/terrain/strips/shallow_water.png", "source_id": 5 },
+		{ "name": "deep_water",    "path": "res://sprites/terrain/strips/deep_water.png",    "source_id": 6 },
+	]
+
+	for t in terrain_textures:
+		var tex := load(t.path) as Texture2D
+		if not tex:
+			push_error("Cannot load: ", t.path)
+			continue
+		var src := TileSetAtlasSource.new()
+		src.texture = tex
+		src.texture_region_size = Vector2i(128, 64)
+		# Create 8 tiles in a row
+		for i in range(8):
+			src.create_tile(Vector2i(i, 0), Vector2i(1, 1))
+		var sid := ts.add_source(src)
+		print("  source ", sid, ": ", t.name)
+
+	print("MapManager: TileSet built with ", len(terrain_textures), " sources")
+	return ts
 
 
 
