@@ -102,7 +102,7 @@ func build_sprite_frames() -> SpriteFrames:
 				var atlas := AtlasTexture.new()
 				atlas.atlas = tex
 				atlas.region = Rect2(i * frame_width, 0, frame_width, frame_height)
-				atlas.filter_clip = true
+				atlas.filter_clip = false  # nearest neighbor for pixel art crispness
 				frames.add_frame(anim_name, atlas)
 
 	return frames

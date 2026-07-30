@@ -1,75 +1,78 @@
 extends RefCounted
 
+## Generates a 300×300 isometric terrain map with 3 biomes:
+##   0 = water (lakes, rivers, sea)
+##   1 = desert (sandy, arid)
+##   2 = plain (grass, forests)
+## Valley-oriented: water collects in low central areas, rivers flow,
+## desert appears in dry zones, plains cover the rest.
+
 func generate(seed, w, h, ts):
 	var rng = RandomNumberGenerator.new()
 	rng.seed = seed
 
-	# Noises
-	var noise = FastNoiseLite.new()
-	noise.seed = abs(seed * 7)
-	noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	noise.frequency = 0.02
-	noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	noise.fractal_octaves = 3
-	noise.fractal_gain = 0.5
+	# ── Noise layers ────────────────────────────────────────
+	var height_noise = FastNoiseLite.new()
+	height_noise.seed = abs(seed * 7)
+	height_noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	height_noise.frequency = 0.015
+	height_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	height_noise.fractal_octaves = 3
+	height_noise.fractal_gain = 0.5
 
-	var detail = FastNoiseLite.new()
-	detail.seed = abs(seed * 13 + 7)
-	detail.noise_type = FastNoiseLite.TYPE_PERLIN
-	detail.frequency = 0.05
+	var detail_noise = FastNoiseLite.new()
+	detail_noise.seed = abs(seed * 13 + 7)
+	detail_noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	detail_noise.frequency = 0.04
+	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	detail_noise.fractal_octaves = 2
+	detail_noise.fractal_gain = 0.4
 
-	# Elevation noise (separate from biome)
-	var elev_noise = FastNoiseLite.new()
-	elev_noise.seed = abs(seed * 3 + 1)
-	elev_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	elev_noise.frequency = 0.025
-	elev_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	elev_noise.fractal_octaves = 3
-	elev_noise.fractal_gain = 0.5
+	# Moisture noise — determines desert vs plain
+	var moisture_noise = FastNoiseLite.new()
+	moisture_noise.seed = abs(seed * 23 + 11)
+	moisture_noise.noise_type = FastNoiseLite.TYPE_PERLIN
+	moisture_noise.frequency = 0.025
+	moisture_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
+	moisture_noise.fractal_octaves = 2
 
+	# River noise
 	var river_noise = FastNoiseLite.new()
 	river_noise.seed = abs(seed * 31)
 	river_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	river_noise.frequency = 0.008
-
-	var river_cells = _generate_river(w, h, rng, river_noise)
+	river_noise.frequency = 0.02
 
 	var ox = -100
 	var oy = -100
 
-	# Step 1: Generate biome + elevation maps
+	# ── Step 1: Generate height + moisture values ────────────
 	var elev_map = []
 	var biome_map = []
 	for y in range(h):
 		elev_map.append([])
 		biome_map.append([])
 		for x in range(w):
-			var val = noise.get_noise_2d(x, y)
-			var det = detail.get_noise_2d(x, y) * 0.15
-			var hval = val + det
-			var elev = elev_noise.get_noise_2d(x, y)
+			# Base height with valley bias (edges higher, center lower)
+			var dx_center = (x - w / 2.0) / (w / 2.0)
+			var dy_center = (y - h / 2.0) / (h / 2.0)
+			var dist_center = sqrt(dx_center * dx_center + dy_center * dy_center)
+			var valley_bias = dist_center * 0.3
+
+			var raw_h = height_noise.get_noise_2d(x, y)
+			var det = detail_noise.get_noise_2d(x, y) * 0.12
+			var hval = raw_h + det + valley_bias
 			biome_map[y].append(hval)
-			# Elevation: 0, 1, 2, or 3 (smooth hills)
-			if elev < -0.4:
-				elev_map[y].append(0)
-			elif elev < 0.0:
-				elev_map[y].append(1)
-			elif elev < 0.4:
-				elev_map[y].append(2)
-			else:
-				elev_map[y].append(3)
 
-	# Debug elevation counts
-	var e0 = 0; var e1 = 0; var e2 = 0
-	for y in range(h):
-		for x in range(w):
-			var e = elev_map[y][x]
-			if e == 0: e0 += 1
-			elif e == 1: e1 += 1
-			else: e2 += 1
-	print("Elev: 0=", e0, " 1=", e1, " 2=", e2)
+			# Elevation: 8 levels
+			var elev_lvl = int((hval + 0.5) * 4.0)
+			elev_lvl = clampi(elev_lvl, 0, 7)
+			elev_map[y].append(elev_lvl)
 
-	# Step 2: Place terrain tiles
+	# ── Step 2: Generate rivers ──────────────────────────────
+	var river_cells = _generate_river(w, h, rng, river_noise)
+
+	# ── Step 3: Place terrain tiles (3 biomes) ──────────────
+	# Also replaces biome_map values with proper biome indices.
 	var layer = TileMapLayer.new()
 	layer.tile_set = ts
 	var count = 0
@@ -77,52 +80,62 @@ func generate(seed, w, h, ts):
 		for x in range(w):
 			var pos = Vector2i(x + ox, y + oy)
 			var hval = biome_map[y][x]
-			var sid = 0
+			var moist = moisture_noise.get_noise_2d(x, y)
+			var sid = 0  # default: plain (grass)
+
+			# Water: rivers or very low areas (lakes/sea)
 			if river_cells.has(Vector2i(x, y)):
-				sid = 6
-			elif hval < -0.25:
-				sid = 6
-			elif hval < -0.1:
-				sid = 5
-			elif hval < 0.05:
-				sid = 2
-			elif hval < 0.35:
-				sid = 0
-			elif hval < 0.5:
-				sid = 1
-			elif hval < 0.6:
-				sid = 4
-			elif hval < 0.7:
-				sid = 3
+				sid = 5  # shallow water for rivers
+			elif hval < -0.15:
+				sid = 6  # deep water (lakes, sea)
+			elif hval < 0.0:
+				sid = 5  # shallow water (shore/lake edge)
+			# Shore transition zone between water and land — use plain tiles (no objects)
+			elif hval < 0.06:
+				sid = 0  # grass (shore, no desert objects)
+			# Desert: dry areas above beach level
+			elif moist < -0.2 and hval < 0.4:
+				sid = 2  # sand (desert)
+			# Plain: everything else
 			else:
-				sid = 1
-			if sid != 6 and rng.randf() < 0.03:
-				sid = 0
-			layer.set_cell(pos, sid, Vector2i(0, 0))
+				sid = 0  # grass (plain)
+
+			# Note: sid 1 (dirt) reserved for future elevation-based transitions
+
+			# Convert sid to biome index: 0/1=plain, 2=desert, 5/6=water
+			var biome_idx = sid
+			if biome_idx >= 5:
+				biome_idx = 0  # water
+			elif biome_idx == 2:
+				biome_idx = 1  # desert
+			else:
+				biome_idx = 2  # plain
+			biome_map[y][x] = biome_idx
+
+			var variant = (x * 7 + y * 13 + sid * 31) % 8
+			layer.set_cell(pos, sid, Vector2i(variant, 0))
 			count += 1
 
-	# Step 3: Create smooth height overlay (hills)
+	# ── Step 4: Elevation overlay ────────────────────────────
 	var heights = Node2D.new()
 	heights.name = "HeightOverlay"
 	var height_count = 0
-
-	# Pre-create overlay textures for each level
+	var overlay_count = 8
 	var overlay_texs = []
-	var colors = [
-		Color(0.3, 0.4, 0.2, 0.15),  # level 0: dark green (low)
-		Color(0.5, 0.6, 0.3, 0.0),   # level 1: transparent (base)
-		Color(0.8, 0.7, 0.4, 0.1),   # level 2: warm gold
-		Color(0.9, 0.6, 0.2, 0.2),   # level 3: bright orange (high)
-	]
-	for c in colors:
+	for i in range(overlay_count):
+		var t = float(i) / (overlay_count - 1)
+		var alpha_curve = 0.03 + abs(t - 0.5) * 0.22
+		var c = Color(
+			0.20 + t * 0.60,
+			0.45 - t * 0.20,
+			0.10 + t * 0.20,
+			alpha_curve
+		)
 		overlay_texs.append(_make_smooth_overlay(128, 64, c))
 
 	for y in range(h):
 		for x in range(w):
 			var elev = elev_map[y][x]
-			# Skip level 1 (base ground, no overlay)
-			if elev == 1:
-				continue
 			var tex = overlay_texs[elev]
 			var world_pos = _cell_to_world(x + ox, y + oy)
 			var sprite = Sprite2D.new()
@@ -132,7 +145,7 @@ func generate(seed, w, h, ts):
 			heights.add_child(sprite)
 			height_count += 1
 
-	# Step 4: Contour lines ON TOP of everything
+	# ── Step 5: Contour lines at major elevation changes ────
 	var contours = Node2D.new()
 	contours.name = "Contours"
 	var contour_count = 0
@@ -146,7 +159,7 @@ func generate(seed, w, h, ts):
 				var nx = c[0]; var ny = c[1]
 				if nx < 0 or nx >= w or ny < 0 or ny >= h:
 					continue
-				if elev_map[ny][nx] != elev:
+				if abs(elev_map[ny][nx] - elev) >= 3:
 					var sp = Sprite2D.new()
 					sp.texture = ct
 					sp.centered = true
@@ -154,31 +167,35 @@ func generate(seed, w, h, ts):
 					contours.add_child(sp)
 					contour_count += 1
 
+	# Verify biome indices
+	var wc = 0; var dc = 0; var pc = 0
+	for yy in range(h):
+		for xx in range(w):
+			match biome_map[yy][xx]:
+				0: wc += 1
+				1: dc += 1
+				2: pc += 1
 	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count, " contours: ", contour_count)
+	print("Biomes: water=", wc, " desert=", dc, " plain=", pc)
 	return [layer, contours, heights, elev_map, biome_map]
 
 
 func _make_contour_tex():
-	# Thin bright line visible on top of everything
-	var img = Image.create(128, 8, false, Image.FORMAT_RGBA8)
-	for y in range(8):
-		var a = 0.6 if y >= 2 and y <= 5 else 0.0
+	var img = Image.create(128, 3, false, Image.FORMAT_RGBA8)
+	for y in range(3):
+		var a = 0.15 if y == 1 else 0.0
 		for x in range(128):
-			img.set_pixel(x, y, Color(0.9, 0.7, 0.3, a))
+			img.set_pixel(x, y, Color(0.6, 0.5, 0.2, a))
 	return ImageTexture.create_from_image(img)
 
 
 func _make_smooth_overlay(w, h, color):
-	## Creates a soft-gradient overlay that fades toward edges
-	## so adjacent cells blend smoothly into hills
 	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
 		for x in range(w):
-			# Distance from center (0 at center, 1 at edge)
 			var dx = (x - w / 2.0) / (w / 2.0)
 			var dy = (y - h / 2.0) / (h / 2.0)
 			var dist = sqrt(dx * dx + dy * dy)
-			# Alpha: full at center, fade to 0 at edges
 			var alpha = max(0.0, 1.0 - dist * 1.5) * color.a
 			img.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
 	return ImageTexture.create_from_image(img)
@@ -186,21 +203,21 @@ func _make_smooth_overlay(w, h, color):
 
 func _generate_river(w, h, rng, noise):
 	var cells = {}
-	var start_x = rng.randi_range(int(w * 0.1), int(w * 0.9))
+	var start_x = rng.randi_range(int(w * 0.15), int(w * 0.85))
 	var start_y = 0
-	var end_x = rng.randi_range(int(w * 0.1), int(w * 0.9))
+	var end_x = rng.randi_range(int(w * 0.15), int(w * 0.85))
 	var end_y = h - 1
 	if rng.randf() > 0.5:
 		start_x = 0
-		start_y = rng.randi_range(int(h * 0.1), int(h * 0.9))
+		start_y = rng.randi_range(int(h * 0.15), int(h * 0.85))
 		end_x = w - 1
-		end_y = rng.randi_range(int(h * 0.1), int(h * 0.9))
+		end_y = rng.randi_range(int(h * 0.15), int(h * 0.85))
 	var pos = Vector2i(start_x, start_y)
 	var target = Vector2i(end_x, end_y)
 	var max_steps = int(max(w, h) * 2)
 	var step = 0
 	while pos.distance_squared_to(target) > 9.0 and step < max_steps:
-		var rw = rng.randi_range(1, 2)
+		var rw = rng.randi_range(1, 3)
 		for dx in range(-rw, rw + 1):
 			for dy in range(-rw, rw + 1):
 				var np = Vector2i(pos.x + dx, pos.y + dy)

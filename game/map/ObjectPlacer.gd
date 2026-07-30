@@ -2,33 +2,24 @@ extends RefCounted
 class_name ObjectPlacer
 
 const _BIOME_SUBDIRS: Dictionary = {
-	0: [],                                  # WATER
-	1: ["cactus", "palmera", "rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],             # SAND
-	2: ["roble", "pino", "arce", "abedul", "sauce", "cipres", "palmera", "flores", "arbustos", "hongos", "bambu"],  # GRASS
-	3: ["rocas", "rocas_bloqueo", "arbustos", "roble", "pino", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],     # DIRT
-	4: ["rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],                                   # MOUNTAIN
+	0: [],                                  # WATER — nothing in water
+	1: ["cactus", "palmera", "rocas", "rocas_bloqueo", "mina_oro", "mina_oro_pequena", "mina_piedra", "mina_piedra_pequena"],  # DESERT
+	2: ["roble", "pino", "arce", "abedul", "sauce", "cipres", "palmera", "flores", "arbustos", "hongos", "bambu", "rocas", "rocas_bloqueo"],  # PLAIN
 }
 
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]
 
-## Density thresholds per biome (0.0 = no objects, 1.0 = every cell filled).
-## Each cell rolls rng.randf() and places an object only when it's below
-## a per-cell threshold from [min, max]. Values halved from original to
-## keep the 120×120 map playable without visual overload.
+## Density thresholds per biome.
 const _DENSITY_MIN: Dictionary = {
-	0: 0.002,   # WATER — only edge reeds/lilies, very sparse
-	1: 0.01,    # SAND — occasional cactus/palm
-	2: 0.03,    # GRASS — sparse trees, visible clearings
-	3: 0.015,   # DIRT — occasional rocks/bushes
-	4: 0.02,    # MOUNTAIN — scattered rocks
+	0: 0.0,     # WATER — nothing
+	1: 0.008,   # DESERT — occasional cactus/palm/rocks
+	2: 0.025,   # PLAIN — trees, bushes, flowers
 }
 
 const _DENSITY_MAX: Dictionary = {
-	0: 0.006,
-	1: 0.02,
-	2: 0.055,
-	3: 0.03,
-	4: 0.04,
+	0: 0.0,
+	1: 0.015,
+	2: 0.05,
 }
 
 const _JITTER_X: float = 8.0
@@ -60,6 +51,10 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 		for x in width:
 			var biome: int = biome_map[y][x] as int
 
+			# Water biome (0): no objects at all
+			if biome == 0:
+				continue
+
 			if _is_cliff_cell(x, y, elev_map, width, height):
 				continue
 
@@ -70,13 +65,7 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			var key: String = "%d,%d" % [x, y]
 			if placed.has(key):
 				continue
-
-			var pool: Array = []
-			if biome == 0:
-				if _is_water_edge(x, y, biome_map, width, height):
-					pool = pools.get("water_edge", [])
-			else:
-				pool = pools.get(biome, [])
+			var pool: Array = pools.get(biome, [])
 
 			if pool.is_empty():
 				continue
@@ -263,8 +252,8 @@ func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGen
 	for y in height:
 		for x in width:
 			var biome: int = biome_map[y][x] as int
-			# Only on grass and dirt
-			if biome != 2 and biome != 3:
+			# Only on plain
+			if biome != 2:
 				continue
 			# Skip cells with existing objects
 			if placed.has("%d,%d" % [x, y]):

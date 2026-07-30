@@ -42,12 +42,48 @@ var _last_direction: Vector2 = Vector2.DOWN
 
 var _unit_sprites: Resource = null
 
+## RTS selection state
+var _selected: bool = false
+var _selection_ring: Sprite2D = null
+## Right-click movement target (null = not moving)
+var _move_target: Vector2 = Vector2.INF
+var _path: Array = []  # A* path waypoints
+var _path_index: int = 0
+const MOVE_ARRIVAL_DIST: float = 12.0
+## Navigation/pathfinding
+var _nav: NavigationSystem = null
+
+## Health system
+var health: int = 100
+var max_health: int = 100
+var _health_bar_fill: ColorRect = null
+
+## Biome index map (set by Llanura1.gd for water/collision checks).
+## biome[y][x] = 0(WATER) | 1(SAND) | 2(GRASS) | 3(DIRT) | 4(MOUNTAIN)
+var biome_data: Array = []
+## Elevation map — elev[y][x] = 0-7, set by Llanura1.gd
+var elev_data: Array = []
+var _cell_ox: int = -100
+var _cell_oy: int = -100
+## Base y-offset for elevation (set in _process to follow terrain height)
+var _elev_base_y: float = 0.0
+
 
 func _ready() -> void:
 	# Connect animation loop signal for auto-transitions (ATTACK/HURT → IDLE)
 	animated_sprite.animation_looped.connect(_on_animation_looped)
 	# Try to build sprite frames now — will work if unit_sprites was already set
 	_rebuild_sprite_frames()
+	# Find health bar (created by Llanura1.gd)
+	_health_bar_fill = get_node_or_null("HealthBar")
+	# Selection ring (hidden by default)
+	_selection_ring = Sprite2D.new()
+	_selection_ring.name = "SelectionRing"
+	_selection_ring.texture = _make_selection_ring()
+	_selection_ring.centered = true
+	_selection_ring.visible = false
+	_selection_ring.z_index = -1  # behind the character
+	add_child(_selection_ring)
 
 
 ## Adjust camera zoom by delta, clamped to [ZOOM_MIN, ZOOM_MAX].
@@ -76,6 +112,58 @@ func set_unit_sprites(sprites: Resource) -> void:
 	_rebuild_sprite_frames()
 
 
+func _input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_LEFT:
+				if not _is_dead:
+					var click_pos = get_global_mouse_position()
+					if click_pos.distance_to(global_position) < 48.0:
+						_set_selected(true)
+					else:
+						_set_selected(false)
+			MOUSE_BUTTON_RIGHT:
+				if not _is_dead:
+					if not _selected:
+						_set_selected(true)
+					_move_to(get_global_mouse_position())
+			MOUSE_BUTTON_WHEEL_UP:
+				_zoom(ZOOM_STEP)
+			MOUSE_BUTTON_WHEEL_DOWN:
+				_zoom(-ZOOM_STEP)
+
+
+## Right-click handler: find A* path and start following it.
+func _move_to(target: Vector2) -> void:
+	_build_nav_if_needed()
+	_path = []
+	_path_index = 0
+
+	if _nav:
+		_path = _nav.find_path(global_position, target)
+
+	if _path.size() >= 2:
+		_path_index = 1  # skip first (current position)
+		_move_target = _path[_path_index]
+	else:
+		# No path found — move directly (may get stuck on obstacles)
+		_move_target = target
+
+	_state = State.WALK
+	_spawn_move_pointer(_move_target)
+	print("Path: ", _path.size(), " waypoints, target=", _move_target)
+
+
+## Build navigation graph from biome data (lazy, once).
+func _build_nav_if_needed() -> void:
+	if _nav != null:
+		return
+	if biome_data.is_empty():
+		return
+	_nav = NavigationSystem.new()
+	_nav.build(biome_data)
+	print("Nav system built: ", biome_data.size(), " rows")
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("test_attack"):
 		attack()
@@ -89,44 +177,88 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom(ZOOM_STEP)
 	elif event.is_action_pressed("zoom_out"):
 		_zoom(-ZOOM_STEP)
-	elif event is InputEventMouseButton:
-		if event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			# Click izquierdo: dispara hacia la posición del mouse
-			var target: Vector2 = get_global_mouse_position()
-			_update_animation((target - global_position).normalized())
-			attack(target)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom(ZOOM_STEP)
-		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom(-ZOOM_STEP)
+	elif event is InputEventMouseButton and event.pressed:
+		match event.button_index:
+			MOUSE_BUTTON_RIGHT:
+				# Fallback: also catch right-click in unhandled
+				if not _is_dead:
+					_move_to(get_global_mouse_position())
 
 
-func _physics_process(_delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	# DEATH locks all movement input
 	if _is_dead:
 		velocity = Vector2.ZERO
 		move_and_slide()
 		return
 
-	var input_dir := Vector2(
-		Input.get_axis("ui_left", "ui_right"),
-		Input.get_axis("ui_up", "ui_down"),
-	)
-
-	if input_dir != Vector2.ZERO:
-		velocity = input_dir * speed
-		# Solo actualizar animación si no está en una acción (ATTACK/HURT/DEATH)
-		if _state in [State.IDLE, State.WALK]:
-			_state = State.WALK
-			_update_animation(input_dir)
-	else:
+	# RTS: A* pathfinding movement
+	if _move_target != Vector2.INF and _state in [State.IDLE, State.WALK]:
+		var dist := global_position.distance_to(_move_target)
+		if dist > MOVE_ARRIVAL_DIST:
+			var dir := (_move_target - global_position).normalized()
+			# Check water ahead
+			var look_ahead = global_position + dir * 8.0
+			if not _is_water_at(look_ahead):
+				velocity = dir * speed
+				_state = State.WALK
+				_update_animation(dir)
+			else:
+				# Blocked by water — skip to next waypoint or stop
+				_advance_path()
+		else:
+			# Reached current waypoint — advance to next
+			if _path_index < _path.size() - 1:
+				_advance_path()
+			else:
+				# Arrived at final destination
+				velocity = Vector2.ZERO
+				_state = State.IDLE
+				_update_animation(_last_direction)
+				_move_target = Vector2.INF
+				_path = []
+	elif _state in [State.IDLE, State.WALK]:
+		# No move target and not attacking/hurt/dead — stand still
 		velocity = Vector2.ZERO
-		if _state in [State.IDLE, State.WALK]:
+		if _state == State.WALK:
 			_state = State.IDLE
 			_update_animation(_last_direction)
-	# Durante ATTACK/HURT/DEATH: animación controlada por la acción, no por input
 
 	move_and_slide()
+	
+	# NOTE: elevation y-offset removed — was fighting move_and_slide()
+	# causing vertical movement to be cancelled out. Visual overlays
+	# still show elevation on the terrain tiles.
+
+
+## Get elevation offset at a world position (in pixels).
+## Higher elevation = more negative y (visually higher on isometric grid).
+func _get_elevation_offset(pos: Vector2) -> float:
+	if elev_data.is_empty():
+		return 0.0
+	var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
+	var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
+	var cx = int(round(px)) - _cell_ox
+	var cy = int(round(py)) - _cell_oy
+	if cx >= 0 and cy >= 0 and cy < elev_data.size() and cx < elev_data[cy].size():
+		# Map 0-7 elevation to -6..+6 pixels offset
+		return (elev_data[cy][cx] - 3.5) * 2.0
+	return 0.0
+
+
+## Check if a world position is on water (biome 0).
+func _is_water_at(pos: Vector2) -> bool:
+	if biome_data.is_empty():
+		return false
+	# Convert world pos to tile coords
+	var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
+	var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
+	# Convert tile coords to loop coords
+	var cx = int(round(px)) - _cell_ox
+	var cy = int(round(py)) - _cell_oy
+	if cx >= 0 and cy >= 0 and cy < biome_data.size() and cx < biome_data[cy].size():
+		return biome_data[cy][cx] == 0
+	return false
 
 
 ## Map velocity vector to one of 5 direction names using atan2 buckets.
@@ -188,7 +320,10 @@ func _update_animation(direction: Vector2) -> void:
 		else _resolve_fallback(base_anim, anim_dir, sf)
 
 	if resolved != "":
-		animated_sprite.play(resolved)
+		# Don't restart if the same animation is already playing — avoids
+		# constant frame-reset when holding a movement key (60fps restart = levitation)
+		if animated_sprite.animation != resolved or not animated_sprite.is_playing():
+			animated_sprite.play(resolved)
 
 	# Flip profile and front_angle when moving left
 	animated_sprite.flip_h = direction.x < 0 and anim_dir in ["profile", "front_angle"]
@@ -230,9 +365,12 @@ static func _resolve_fallback(base_anim: String, dir: String, sf: SpriteFrames) 
 func attack(target_pos: Vector2 = Vector2.INF) -> void:
 	if _is_dead:
 		return
+	# Stop movement when attacking
+	_move_target = Vector2.INF
+	velocity = Vector2.ZERO
 	_state = State.ATTACK
 	_update_animation(_last_direction)
-	# Spawn arrow — con o sin objetivo
+	# Spawn arrow
 	_spawn_arrow(target_pos)
 
 
@@ -259,9 +397,12 @@ func _spawn_arrow(target_pos: Vector2 = Vector2.INF) -> void:
 
 ## Start hurt animation. Loops once then auto-returns to IDLE.
 ## Shows a red flash for immediate visual feedback.
-func hurt() -> void:
+func hurt(damage: int = 15) -> void:
 	if _is_dead:
 		return
+	# Reduce health
+	health = max(0, health - damage)
+	_update_health_bar()
 	_state = State.HURT
 	_update_animation(_last_direction)
 	# Flash rojo para que el hurt sea inmediatamente visible
@@ -269,6 +410,22 @@ func hurt() -> void:
 	var tween := create_tween()
 	tween.tween_property(animated_sprite, "modulate", Color.WHITE, 0.3)
 	tween.set_trans(Tween.TRANS_SINE)
+	if health <= 0:
+		die()
+
+
+func _update_health_bar():
+	if not _health_bar_fill:
+		return
+	var ratio = float(health) / max_health
+	_health_bar_fill.size.x = 36.0 * ratio
+	# Color: green → yellow → red
+	if ratio > 0.6:
+		_health_bar_fill.color = Color(0.2, 0.9, 0.2, 0.9)
+	elif ratio > 0.3:
+		_health_bar_fill.color = Color(0.9, 0.8, 0.2, 0.9)
+	else:
+		_health_bar_fill.color = Color(0.9, 0.2, 0.2, 0.9)
 
 
 ## Start death animation. Terminal — locks all movement input.
@@ -322,6 +479,105 @@ func play_animation(anim: String, direction: Vector2 = Vector2.DOWN) -> void:
 		"death":  _state = State.DEATH
 		_:        _state = State.IDLE
 	_update_animation(direction)
+
+
+## Spawn an AoE2-style movement pointer at the given world position.
+## A ring that appears, shrinks, and fades out over ~0.8 seconds.
+func _spawn_move_pointer(pos: Vector2) -> void:
+	var ring = Sprite2D.new()
+	ring.name = "MovePointer"
+	ring.texture = _make_pointer_ring()
+	ring.centered = true
+	ring.position = pos
+	ring.modulate = Color(1, 1, 1, 0.9)
+	ring.z_index = 100
+	get_parent().add_child(ring)
+	
+	# Animate: shrink and fade out
+	var tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(ring, "scale", Vector2(0.3, 0.3), 0.8)
+	tween.tween_property(ring, "modulate:a", 0.0, 0.8)
+	tween.chain().tween_callback(ring.queue_free)
+
+
+## Create a simple ring texture for the movement pointer.
+func _make_pointer_ring() -> Texture2D:
+	var size := 48
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in range(size):
+		for x in range(size):
+			var dx := (x - size / 2.0) / (size / 2.0)
+			var dy := (y - size / 2.0) / (size / 2.0)
+			var dist := sqrt(dx * dx + dy * dy)
+			var alpha := 0.0
+			if dist >= 0.75 and dist <= 0.9:
+				alpha = 1.0
+			elif dist >= 0.72 and dist <= 0.75:
+				alpha = 0.3  # soft inner edge
+			img.set_pixel(x, y, Color(0.9, 0.9, 0.4, alpha))
+	return ImageTexture.create_from_image(img)
+
+
+## Health accessors for UI.
+func get_health() -> int:
+	return health
+
+func get_max_health() -> int:
+	return max_health
+
+
+## Advance to next waypoint in the path, or stop if at end.
+func _advance_path() -> void:
+	_path_index += 1
+	if _path_index < _path.size():
+		_move_target = _path[_path_index]
+	else:
+		velocity = Vector2.ZERO
+		_state = State.IDLE
+		_update_animation(_last_direction)
+		_move_target = Vector2.INF
+		_path = []
+
+
+## Stop current movement immediately.
+func stop_movement() -> void:
+	_move_target = Vector2.INF
+	velocity = Vector2.ZERO
+	if _state in [State.IDLE, State.WALK]:
+		_state = State.IDLE
+		_update_animation(_last_direction)
+
+
+## ── Selection ───────────────────────────────────────────
+
+func is_selected() -> bool:
+	return _selected
+
+func _set_selected(val: bool) -> void:
+	_selected = val
+	if _selection_ring:
+		_selection_ring.visible = val
+
+
+## Create a simple circular selection ring texture procedurally.
+func _make_selection_ring() -> Texture2D:
+	var size := 64
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in range(size):
+		for x in range(size):
+			var dx := (x - size / 2.0) / (size / 2.0)
+			var dy := (y - size / 2.0) / (size / 2.0)
+			var dist := sqrt(dx * dx + dy * dy)
+			var alpha := 0.0
+			# Ring between dist 0.85 and 0.95
+			if dist >= 0.85 and dist <= 0.95:
+				alpha = 0.7
+			# Green glow inside the ring (very subtle)
+			elif dist < 0.85 and dist > 0.5:
+				alpha = 0.08
+			img.set_pixel(x, y, Color(0.2, 1.0, 0.3, alpha))
+	return ImageTexture.create_from_image(img)
 
 
 ## Apply team color via shader.  Pixels matching marker_color (magenta

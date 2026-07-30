@@ -1,5 +1,11 @@
 extends Node2D
 
+const ObjectPlacer = preload("res://map/ObjectPlacer.gd")
+const UnitController = preload("res://scripts/UnitController.gd")
+
+## Development seed. Set to 0 for random map on each load.
+@export var dev_seed: int = 54321
+
 var _elev_map = []
 var _biome_map = []
 
@@ -15,7 +21,7 @@ func _generate():
 	if not ts:
 		return
 
-	var seed_val = randi()
+	var seed_val = dev_seed if dev_seed != 0 else randi()
 	print("Seed: ", seed_val)
 
 	var gen = load("res://map/ProceduralGeneration.gd").new()
@@ -27,9 +33,76 @@ func _generate():
 		if result.size() >= 4: _elev_map = result[3]
 		if result.size() >= 5: _biome_map = result[4]
 	
+	# ── Environment Objects ────────────────────────────────────
+	var rng = RandomNumberGenerator.new()
+	rng.seed = seed_val
+	
+	var object_container = Node2D.new()
+	object_container.name = "EnvironmentObjects"
+	object_container.y_sort_enabled = true
+	
+	var placer = ObjectPlacer.new()
+	placer.place_objects(_biome_map, _elev_map, rng, object_container)
+	add_child(object_container)
+	
+	# ── Player Unit ─────────────────────────────────────────────
+	var player = UnitController.new()
+	# Start at a visible central area
+	player.position = Vector2(0, 3500)
+	player.name = "PlayerUnit"
+	# Collision shape for physics (objects, walls)
+	var col_shape = CollisionShape2D.new()
+	col_shape.name = "CollisionShape2D"
+	var rect = RectangleShape2D.new()
+	rect.size = Vector2(32, 48)
+	col_shape.shape = rect
+	player.add_child(col_shape)
+	# UnitController expects child nodes for animation and camera
+	var anim_sprite = AnimatedSprite2D.new()
+	anim_sprite.name = "AnimatedSprite2D"
+	anim_sprite.sprite_frames = SpriteFrames.new()
+	anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	player.add_child(anim_sprite)
+	var cam = Camera2D.new()
+	cam.name = "Camera2D"
+	cam.enabled = false  # main camera is CameraController
+	player.add_child(cam)
+	# Health bar above the character
+	var health_bar_bg = ColorRect.new()
+	health_bar_bg.name = "HealthBarBG"
+	health_bar_bg.color = Color(0.2, 0.05, 0.05, 0.8)
+	health_bar_bg.size = Vector2(36, 5)
+	health_bar_bg.position = Vector2(-18, -74)
+	health_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player.add_child(health_bar_bg)
+	var health_bar_fill = ColorRect.new()
+	health_bar_fill.name = "HealthBar"
+	health_bar_fill.color = Color(0.2, 0.9, 0.2, 0.9)
+	health_bar_fill.size = Vector2(36, 5)
+	health_bar_fill.position = Vector2(-18, -74)
+	health_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	player.add_child(health_bar_fill)
+	
+	# Load arquero animations from manifest
+	var manifest_path = "res://sprites/infanteria/arquero/arquero_manifest.json"
+	var unit_sprites = UnitSprites.load_from_manifest(manifest_path)
+	if unit_sprites:
+		player.set_unit_sprites(unit_sprites)
+	# Pass biome + elevation data for water detection
+	player.biome_data = _biome_map
+	player.elev_data = _elev_map
+	add_child(player)
+	
+	var camera = get_node_or_null("../CameraController")
+	if camera:
+		camera.follow_target = player
+	
 	# UI overlay
 	var ui = load("res://map/GameUI.gd").new()
 	ui.set_minimap_data(_biome_map, 300, 300)
+	ui.set_player_ref(player)
+	if camera:
+		ui.set_camera_ref(camera)
 	add_child(ui)
 	_add_mouse_overlay()
 	print("Ready")
@@ -74,6 +147,9 @@ func _cell_to_world(x, y):
 	return Vector2((x - y) * 64, (x + y) * 32)
 
 
+
+
+
 func _build_tileset():
 	var ts = TileSet.new()
 	ts.tile_size = Vector2i(128, 64)
@@ -94,6 +170,8 @@ func _build_tileset():
 		var src = TileSetAtlasSource.new()
 		src.texture = tex
 		src.texture_region_size = Vector2i(128, 64)
-		src.create_tile(Vector2i(0, 0), Vector2i(1, 1))
+		# Create all 8 tile variants from the strip for visual variety
+		for i in range(8):
+			src.create_tile(Vector2i(i, 0), Vector2i(1, 1))
 		ts.add_source(src)
 	return ts

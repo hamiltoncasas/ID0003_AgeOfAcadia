@@ -2,16 +2,15 @@
 
 [ext_resource type="Script" path="res://scripts/Arrow.gd" id="1_arrow"]
 
-[sub_resource type="RectangleShape2D" id="1_hitbox"]
-size = Vector2(32, 6)
+[sub_resource type="CircleShape2D" id="1_hitbox"]
+radius = 4.0
 
 [node name="Arrow" type="Area2D"]
-scale = Vector2(3, 3)
+scale = Vector2(1, 1)
 script = ExtResource("1_arrow")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 centered = true
-texture_filter = 1
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource("1_hitbox")
