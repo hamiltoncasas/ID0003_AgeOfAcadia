@@ -200,12 +200,11 @@ func _physics_process(delta: float) -> void:
 				elif not _is_water_at(global_position - perp * 12.0):
 					dir = -perp
 				else:
-					# Surrounded by water on both sides — just stop
+					# Surrounded by water — skip this waypoint
 					velocity = Vector2.ZERO
 					move_and_slide()
-					# Skip ahead on path
 					_advance_waypoint_or_stop()
-					continue
+					return  # exit physics_process, handled for this frame
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
