@@ -22,7 +22,7 @@ func generate(seed, w, h, ts):
 	var elev_noise = FastNoiseLite.new()
 	elev_noise.seed = abs(seed * 3 + 1)
 	elev_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	elev_noise.frequency = 0.015
+	elev_noise.frequency = 0.03
 	elev_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	elev_noise.fractal_octaves = 2
 	elev_noise.fractal_gain = 0.5
@@ -95,8 +95,8 @@ func generate(seed, w, h, ts):
 	var edge_count = 0
 
 	# Edge texture: semi-transparent brown strip
-	var edge_tex := _make_edge_texture(128, 32, Color(0.5, 0.35, 0.2, 0.4))
-	var deep_edge_tex := _make_edge_texture(128, 48, Color(0.3, 0.2, 0.1, 0.5))
+	var edge_tex := _make_edge_texture(128, 32, Color(0.4, 0.25, 0.15, 0.7))
+	var deep_edge_tex := _make_edge_texture(128, 48, Color(0.3, 0.15, 0.08, 0.8))
 
 	for y in range(h):
 		for x in range(w):
@@ -134,12 +134,12 @@ func generate(seed, w, h, ts):
 
 	print("Tiles: ", count, " river: ", river_cells.size(), " edges: ", edge_count)
 
-	# Return both layer and edges
+	# Order: edges first (behind), terrain on top
 	var result = Node2D.new()
-	layer.name = "Terrain"
-	result.add_child(layer)
 	edges.name = "ElevationEdges"
 	result.add_child(edges)
+	layer.name = "Terrain"
+	result.add_child(layer)
 	return result
 
 
@@ -147,11 +147,11 @@ func _make_edge_texture(w, h, color):
 	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
 		var alpha = color.a
-		# Gradient: more opaque at bottom, fading at top
-		if y < 4:
-			alpha = 0.0  # fully transparent at top edge
-		elif y < 8:
-			alpha = color.a * (y - 4) / 4.0
+		if y < 2:
+			alpha = 0.0
+		elif y < 6:
+			alpha = color.a * 0.5
+		# else: full alpha
 		var c = Color(color.r, color.g, color.b, alpha)
 		for x in range(w):
 			img.set_pixel(x, y, c)
