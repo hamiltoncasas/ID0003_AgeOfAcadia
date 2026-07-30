@@ -71,15 +71,15 @@ func _generate():
 		unit.name = "Archer_%d" % i
 		unit.unit_index = i
 		
-		# Collision shape — layer 2 so units don't collide with each other
+		# Collision shape
 		var col_shape = CollisionShape2D.new()
 		var rect = RectangleShape2D.new()
 		rect.size = Vector2(24, 36)
 		col_shape.shape = rect
 		col_shape.name = "CollisionShape2D"
 		unit.add_child(col_shape)
-		unit.collision_layer = 2  # unit layer
-		unit.collision_mask = 1   # collide with objects (layer 1), not other units
+		# Default layer 1, mask 1 — collides with everything
+		# Collision uses defaults: layer 1, mask 1
 		
 		# AnimatedSprite2D for arquero animations
 		var anim_sprite = AnimatedSprite2D.new()

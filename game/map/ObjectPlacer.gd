@@ -83,8 +83,6 @@ func place_objects(water_map: Array, elev_map: Array, rng: RandomNumberGenerator
 
 			var body := StaticBody2D.new()
 			body.name = "Object_%d_%d" % [x, y]
-			body.collision_layer = 1   # object layer
-			body.collision_mask = 2    # collide with units (layer 2)
 			body.position = cell_world + Vector2(
 				rng.randf_range(-_JITTER_X, _JITTER_X),
 				rng.randf_range(-_JITTER_Y, _JITTER_Y)
