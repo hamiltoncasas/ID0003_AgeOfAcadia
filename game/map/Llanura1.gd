@@ -8,8 +8,7 @@ const UnitController = preload("res://scripts/UnitController.gd")
 
 var _elev_map = []
 var _biome_map = []
-var _water_map = []
-var _tilemap_layer: TileMapLayer = null
+var tilemap_layer: TileMapLayer = null  # PUBLIC — shared with ObjectPlacer and UnitController
 
 
 func _ready():
@@ -30,13 +29,12 @@ func _generate():
 	var result = gen.generate(seed_val, 300, 300, ts)
 	if result is Array:
 		if result.size() >= 1:
-			_tilemap_layer = result[0]  # terrain TileMapLayer
-			add_child(_tilemap_layer)
+			tilemap_layer = result[0]  # terrain TileMapLayer — shared reference
+			add_child(tilemap_layer)
 		if result.size() >= 2: add_child(result[1])  # contours
 		if result.size() >= 3: add_child(result[2])  # heights
 		if result.size() >= 4: _elev_map = result[3]
 		if result.size() >= 5: _biome_map = result[4]
-		if result.size() >= 6: _water_map = result[5]
 	
 	# ── Environment Objects ────────────────────────────────────
 	var rng = RandomNumberGenerator.new()
@@ -47,7 +45,7 @@ func _generate():
 	object_container.y_sort_enabled = true
 	
 	var placer = ObjectPlacer.new()
-	placer.place_objects(_water_map, _elev_map, rng, object_container, _biome_map)
+	placer.place_objects(tilemap_layer, _elev_map, rng, object_container)
 	add_child(object_container)
 	
 	# ── Create 6 Archer Units ────────────────────────────────────
@@ -115,10 +113,8 @@ func _generate():
 			unit.set_unit_sprites(unit_sprites)
 		
 		# Biome data for water detection
-		unit.biome_data = _biome_map
-		unit._water_map = _water_map
-		unit.elev_data = _elev_map
-		unit._tilemap_layer = _tilemap_layer
+		unit.biome_data = _biome_map  # for ObjectPlacer biome variety (not water detection)
+		unit.tilemap_layer = tilemap_layer  # PUBLIC — direct water check
 		
 		add_child(unit)
 		units.append(unit)

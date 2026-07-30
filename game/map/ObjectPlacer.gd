@@ -26,7 +26,7 @@ const _JITTER_X: float = 8.0
 const _JITTER_Y: float = 4.0
 
 
-func place_objects(water_map: Array, elev_map: Array, rng: RandomNumberGenerator, container: Node, biome_map: Array = []) -> Dictionary:
+func place_objects(tilemap_layer: TileMapLayer, elev_map: Array, rng: RandomNumberGenerator, container: Node) -> Dictionary:
 	var textures: Dictionary = SpriteCache.get_entorno_textures()
 	if textures.is_empty():
 		push_warning("ObjectPlacer: get_entorno_textures() returned empty")
@@ -40,21 +40,26 @@ func place_objects(water_map: Array, elev_map: Array, rng: RandomNumberGenerator
 	var placed: Dictionary = {}
 	var total_count: int = 0
 	var warnings: Array = []
-	var height: int = water_map.size()
+	var height: int = elev_map.size()
 	if height == 0:
-		return { "count": 0, "warnings": ["water_map has no rows"] }
-	var width: int = water_map[0].size()
+		return { "count": 0, "warnings": ["elev_map has no rows"] }
+	var width: int = elev_map[0].size()
 	if width == 0:
-		return { "count": 0, "warnings": ["water_map has no columns"] }
+		return { "count": 0, "warnings": ["elev_map has no columns"] }
 
 	for y in height:
 		for x in width:
-			# Skip water cells using explicit boolean water_map
-			if water_map[y][x]:
+			# Check TileMapLayer directly: skip water cells
+			var cell = Vector2i(x - 100, y - 100)  # tile coords (with offset)
+			var sid = tilemap_layer.get_cell_source_id(cell)
+			if sid == 5 or sid == 6:  # water tiles
 				continue
-
-			# Get biome index from biome_map for pool/density selection
-			var biome: int = biome_map[y][x] as int if not biome_map.is_empty() else 2
+			# Determine biome from source ID for density/pool selection
+			var biome := 2  # default plain
+			if sid == 2:
+				biome = 1  # desert
+			elif sid == 0:
+				biome = 2  # plain
 
 			if _is_cliff_cell(x, y, elev_map, width, height):
 				continue
@@ -139,7 +144,7 @@ func place_objects(water_map: Array, elev_map: Array, rng: RandomNumberGenerator
 
 	# Second pass: scatter small ground-cover sprites (flowers, grass tufts)
 	# on grass/dirt cells for natural terrain detail — no collision.
-	var ground_cover_count := _place_ground_cover(biome_map, elev_map, rng, container, placed, width, height)
+	var ground_cover_count := _place_ground_cover(tilemap_layer, elev_map, rng, container, placed, width, height)
 	if ground_cover_count > 0:
 		print("ObjectPlacer: ", ground_cover_count, " ground-cover sprites")
 
@@ -227,7 +232,7 @@ func _is_water_edge(x: int, y: int, biome_map: Array, width: int, height: int) -
 
 # ── Ground cover (terrain detail) ────────────────────────────────
 
-func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator,
+func _place_ground_cover(tlm: TileMapLayer, elev_map: Array, rng: RandomNumberGenerator,
 		container: Node, placed: Dictionary, width: int, height: int) -> int:
 	## Scatter small visual-only sprites (flowers, tiny bushes) on grass and
 	## dirt cells to create natural-looking terrain detail like AoE-style
@@ -252,9 +257,10 @@ func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGen
 
 	for y in height:
 		for x in width:
-			var biome: int = biome_map[y][x] as int
-			# Only on plain
-			if biome != 2:
+			# Check TileMapLayer: skip water and desert
+			var cell = Vector2i(x - 100, y - 100)
+			var sid = tlm.get_cell_source_id(cell)
+			if sid == 5 or sid == 6 or sid == 2:  # water or desert — skip
 				continue
 			# Skip cells with existing objects
 			if placed.has("%d,%d" % [x, y]):
@@ -273,7 +279,7 @@ func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGen
 			sprite.position = _cell_to_world(x, y) + Vector2(
 				rng.randf_range(-8, 8), rng.randf_range(-4, 4)
 			)
-			sprite.scale = Vector2(0.8, 0.8) if biome == 2 else Vector2(0.6, 0.6)
+			sprite.scale = Vector2(0.8, 0.8)
 			# Subtle random hue variation so ground cover doesn't look cloned
 			sprite.self_modulate = Color(
 				1.0,

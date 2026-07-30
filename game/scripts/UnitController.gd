@@ -53,9 +53,7 @@ var _path_waypoints: Array = []
 var _path_index: int = 0
 var _nav: NavigationSystem = null
 var _direct_move: bool = false
-var _tilemap_layer: TileMapLayer = null  # set by Llanura1.gd for water checks
-var _water_map: Array = []  # explicit boolean water map
-var _water_map_checked: bool = false  # debug: first-time check
+var tilemap_layer: TileMapLayer = null  # PUBLIC — set by Llanura1.gd, used for water check
 const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
@@ -135,25 +133,10 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Right-click handler: A* pathfinding with water avoidance.
 func _move_to(target: Vector2) -> void:
-	# Debug: one-time water_map check
-	if not _water_map_checked:
-		_water_map_checked = true
-		var wc = 0
-		if not _water_map.is_empty():
-			for yy in range(0, 300, 10):
-				for xx in range(0, 300, 10):
-					if yy < _water_map.size() and xx < _water_map[yy].size():
-						if _water_map[yy][xx]:
-							wc += 1
-			print("WATER MAP unit ", unit_index, ": size=", _water_map.size(), "x", _water_map[0].size(), " sample water=", wc, "/900")
-		else:
-			print("WATER MAP unit ", unit_index, ": EMPTY!")
-	
-	# Build nav system once
-	if _nav == null and not _water_map.is_empty():
+	# Build nav system once — uses biome_data for A* graph (0=water blocked)
+	if _nav == null and not biome_data.is_empty():
 		_nav = NavigationSystem.new()
-		_nav.build(_water_map)
-		print("Nav built for unit ", unit_index)
+		_nav.build(biome_data)
 	
 	# Find A* path avoiding water (target may be redirected to nearest land)
 	var adjusted = target
@@ -247,28 +230,19 @@ func _physics_process(delta: float) -> void:
 
 ## Find nearest non-water cell by searching outward in expanding squares.
 func _find_nearest_land(world: Vector2) -> Vector2:
+	if tilemap_layer == null:
+		return world
 	var px = (world.x / 64.0 + world.y / 32.0) / 2.0
 	var py = (world.y / 32.0 - world.x / 64.0) / 2.0
-	var cx = int(round(px)) - _cell_ox
-	var cy = int(round(py)) - _cell_oy
+	var cx = int(round(px))
+	var cy = int(round(py))
 	for r in range(1, 60):
 		for dx in range(-r, r + 1):
 			for dy in range(-r, r + 1):
-				var nx = cx + dx
-				var ny = cy + dy
-				if nx >= 0 and ny >= 0:
-					# Check water_map first (boolean: true = water)
-					if not _water_map.is_empty() and ny < _water_map.size() and nx < _water_map[ny].size():
-						if not _water_map[ny][nx]:
-							var tile_x = nx + _cell_ox
-							var tile_y = ny + _cell_oy
-							return Vector2((tile_x - tile_y) * 64, (tile_x + tile_y) * 32)
-					# Fallback to biome_data (int: 0 = water)  
-					if not biome_data.is_empty() and ny < biome_data.size() and nx < biome_data[ny].size():
-						if biome_data[ny][nx] != 0:
-							var tile_x = nx + _cell_ox
-							var tile_y = ny + _cell_oy
-							return Vector2((tile_x - tile_y) * 64, (tile_x + tile_y) * 32)
+				var cell = Vector2i(cx + dx, cy + dy)
+				var sid = tilemap_layer.get_cell_source_id(cell)
+				if sid != 5 and sid != 6 and sid != -1:
+					return Vector2((cell.x - cell.y) * 64, (cell.x + cell.y) * 32)
 	return Vector2.INF  # signal: no land found
 
 
@@ -288,31 +262,16 @@ func _get_elevation_offset(pos: Vector2) -> float:
 
 
 ## Check if a world position is on water (biome 0).
+## Returns true if the given world position is on a water tile.
+## Uses TileMapLayer directly — the tiles that are actually rendered.
 func _is_water_at(pos: Vector2) -> bool:
+	if tilemap_layer == null:
+		return false
 	var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
 	var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
-	var cx = int(round(px)) - _cell_ox
-	var cy = int(round(py)) - _cell_oy
-	
-	# PRIMARY: TileMapLayer (ground truth — reads actual placed tiles)
-	if _tilemap_layer != null:
-		var sid = _tilemap_layer.get_cell_source_id(Vector2i(cx, cy))
-		if sid == 5 or sid == 6:
-			return true
-	elif _water_map.is_empty() and biome_data.is_empty():
-		# No data sources available
-		push_warning("Unit ", unit_index, ": no water data available — TileMapLayer is null, water_map and biome_data empty")
-		return false
-	
-	# SECONDARY: water_map (explicit boolean from ProceduralGeneration)
-	if not _water_map.is_empty() and cy >= 0 and cy < _water_map.size() and cx >= 0 and cx < _water_map[cy].size():
-		return _water_map[cy][cx]
-	
-	# FALLBACK: biome_data
-	if not biome_data.is_empty() and cy >= 0 and cy < biome_data.size() and cx >= 0 and cx < biome_data[cy].size():
-		return biome_data[cy][cx] == 0
-	
-	return false
+	var cell = Vector2i(int(round(px)), int(round(py)))
+	var sid = tilemap_layer.get_cell_source_id(cell)
+	return sid == 5 or sid == 6
 
 
 ## Map velocity vector to one of 5 direction names using atan2 buckets.
