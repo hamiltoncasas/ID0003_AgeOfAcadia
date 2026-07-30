@@ -36,14 +36,8 @@ func _ready():
 	biome_map = result.biome_map
 	elev_map = result.elev_map
 
-	var base_layer := TileMapLayer.new()
-	base_layer.name = "BaseTerrain"
-	base_layer.tile_set = tile_set
-	for y in map_height:
-		for x in map_width:
-			base_layer.set_cell(Vector2i(x, y), 0, Vector2i(x % 2, y % 4))
-	add_child(base_layer)
-
+	# No flat base layer — elevation layers (0, 1, 2) already provide
+	# proper per-biome terrain with correct y-offset for relief.
 	var layers = result.layers
 	for layer in layers:
 		add_child(layer)
@@ -86,6 +80,8 @@ func _ready():
 		camera.map_size = Vector2i(map_width, map_height)
 		camera.follow_target = player
 
+	# Minimap must be in a CanvasLayer so its Control node positions
+	# in screen space, not world space.
 	var minimap_scene = preload("res://map/Minimap.tscn")
 	var minimap = minimap_scene.instantiate()
 	minimap.map_manager = self
@@ -93,7 +89,11 @@ func _ready():
 	minimap.map_width = map_width
 	minimap.map_height = map_height
 	minimap.player = player
-	add_child(minimap)
+	var ui_layer := CanvasLayer.new()
+	ui_layer.name = "UILayer"
+	ui_layer.layer = 10
+	ui_layer.add_child(minimap)
+	add_child(ui_layer)
 
 	var selector := _CellSelector.new()
 	selector.name = "CellSelector"

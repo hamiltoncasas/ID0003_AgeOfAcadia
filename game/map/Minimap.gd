@@ -1,5 +1,8 @@
 extends Control
 
+## Compact minimap (160×160 px) with biome-colored terrain and player marker.
+## Click to teleport the camera to that location.
+
 var map_manager: Node = null
 var biome_map: Array = []
 var map_width: int = 120
@@ -8,14 +11,17 @@ var player: Node2D = null
 
 var _texture_rect: TextureRect = null
 var _player_marker: ColorRect = null
-var _minimap_texture: ImageTexture = null
+
+const MINIMAP_SIZE: float = 160.0
+const PADDING: float = 6.0
+const MAP_SIZE: float = MINIMAP_SIZE - PADDING * 2
 
 const BIOME_COLORS: Dictionary = {
-	0: Color(0.2, 0.3, 0.8, 1.0),
-	1: Color(0.76, 0.7, 0.5, 1.0),
-	2: Color(0.3, 0.6, 0.2, 1.0),
-	3: Color(0.5, 0.4, 0.3, 1.0),
-	4: Color(0.4, 0.35, 0.3, 1.0),
+	0: Color(0.2, 0.3, 0.8, 1.0),    # WATER
+	1: Color(0.76, 0.7, 0.5, 1.0),   # SAND
+	2: Color(0.3, 0.6, 0.2, 1.0),    # GRASS
+	3: Color(0.5, 0.4, 0.3, 1.0),    # DIRT
+	4: Color(0.4, 0.35, 0.3, 1.0),   # MOUNTAIN
 }
 
 
@@ -27,7 +33,7 @@ func _ready():
 
 
 func _update_position():
-	size = Vector2(260, 260)
+	size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
 	position = Vector2(
 		get_viewport_rect().size.x - size.x - 10,
 		get_viewport_rect().size.y - size.y - 10
@@ -37,23 +43,23 @@ func _update_position():
 func _build_ui():
 	var bg := ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0, 0, 0, 0.5)
-	bg.size = Vector2(260, 260)
+	bg.color = Color(0, 0, 0, 0.45)
+	bg.size = Vector2(MINIMAP_SIZE, MINIMAP_SIZE)
 	bg.mouse_filter = MOUSE_FILTER_IGNORE
 	add_child(bg)
 
 	_texture_rect = TextureRect.new()
 	_texture_rect.name = "MinimapTexture"
 	_texture_rect.stretch_mode = TextureRect.STRETCH_KEEP
-	_texture_rect.position = Vector2(10, 10)
-	_texture_rect.size = Vector2(240, 240)
+	_texture_rect.position = Vector2(PADDING, PADDING)
+	_texture_rect.size = Vector2(MAP_SIZE, MAP_SIZE)
 	_texture_rect.mouse_filter = MOUSE_FILTER_IGNORE
 	add_child(_texture_rect)
 
 	_player_marker = ColorRect.new()
 	_player_marker.name = "PlayerMarker"
-	_player_marker.color = Color(1, 0, 0, 0.9)
-	_player_marker.size = Vector2(4, 4)
+	_player_marker.color = Color(1, 0.9, 0.2, 0.95)  # gold dot
+	_player_marker.size = Vector2(3, 3)
 	_player_marker.mouse_filter = MOUSE_FILTER_IGNORE
 	_texture_rect.add_child(_player_marker)
 
@@ -62,6 +68,7 @@ func _generate_minimap():
 	if biome_map.is_empty():
 		return
 
+	var tex_size := int(MAP_SIZE)
 	var img := Image.create(map_width, map_height, false, Image.FORMAT_RGBA8)
 	for y in map_height:
 		for x in map_width:
@@ -70,12 +77,11 @@ func _generate_minimap():
 				var color = BIOME_COLORS.get(biome, Color.BLACK)
 				img.set_pixel(x, y, color)
 
-	var display := Image.create(map_width * 2, map_height * 2, false, Image.FORMAT_RGBA8)
-	display.blit_rect(img, Rect2i(0, 0, map_width, map_height), Vector2i(0, 0))
-	display.resize(240, 240, Image.INTERPOLATE_NEAREST)
+	# Resize the full biome map to fill the texture rect directly
+	img.resize(tex_size, tex_size, Image.INTERPOLATE_NEAREST)
 
-	_minimap_texture = ImageTexture.create_from_image(display)
-	_texture_rect.texture = _minimap_texture
+	var tex := ImageTexture.create_from_image(img)
+	_texture_rect.texture = tex
 
 
 func _process(_delta: float):

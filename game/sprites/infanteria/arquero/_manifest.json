@@ -1,0 +1,182 @@
+{
+  "character": "arquero",
+  "frame_width": 128,
+  "frame_height": 128,
+  "strips": [
+    {
+      "animation": "idle",
+      "direction": "front",
+      "frames": 2,
+      "file": "arquero_idle_front.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "idle",
+      "direction": "front_angle",
+      "frames": 2,
+      "file": "arquero_idle_front_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "idle",
+      "direction": "profile",
+      "frames": 1,
+      "file": "arquero_idle_profile.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "idle",
+      "direction": "back_angle",
+      "frames": 1,
+      "file": "arquero_idle_back_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "idle",
+      "direction": "back",
+      "frames": 2,
+      "file": "arquero_idle_back.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "walk",
+      "direction": "front",
+      "frames": 2,
+      "file": "arquero_walk_front.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "walk",
+      "direction": "front_angle",
+      "frames": 2,
+      "file": "arquero_walk_front_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "walk",
+      "direction": "profile",
+      "frames": 1,
+      "file": "arquero_walk_profile.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "walk",
+      "direction": "back_angle",
+      "frames": 1,
+      "file": "arquero_walk_back_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "walk",
+      "direction": "back",
+      "frames": 2,
+      "file": "arquero_walk_back.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "attack",
+      "direction": "front",
+      "frames": 2,
+      "file": "arquero_attack_front.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "attack",
+      "direction": "front_angle",
+      "frames": 2,
+      "file": "arquero_attack_front_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "attack",
+      "direction": "profile",
+      "frames": 1,
+      "file": "arquero_attack_profile.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "attack",
+      "direction": "back_angle",
+      "frames": 1,
+      "file": "arquero_attack_back_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "attack",
+      "direction": "back",
+      "frames": 2,
+      "file": "arquero_attack_back.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "hurt",
+      "direction": "front",
+      "frames": 2,
+      "file": "arquero_hurt_front.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "hurt",
+      "direction": "front_angle",
+      "frames": 2,
+      "file": "arquero_hurt_front_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "hurt",
+      "direction": "profile",
+      "frames": 1,
+      "file": "arquero_hurt_profile.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "hurt",
+      "direction": "back_angle",
+      "frames": 1,
+      "file": "arquero_hurt_back_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "hurt",
+      "direction": "back",
+      "frames": 2,
+      "file": "arquero_hurt_back.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "death",
+      "direction": "front",
+      "frames": 2,
+      "file": "arquero_death_front.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "death",
+      "direction": "front_angle",
+      "frames": 2,
+      "file": "arquero_death_front_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "death",
+      "direction": "profile",
+      "frames": 1,
+      "file": "arquero_death_profile.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "death",
+      "direction": "back_angle",
+      "frames": 1,
+      "file": "arquero_death_back_angle.png",
+      "speed": 5.0
+    },
+    {
+      "animation": "death",
+      "direction": "back",
+      "frames": 2,
+      "file": "arquero_death_back.png",
+      "speed": 5.0
+    }
+  ]
+}

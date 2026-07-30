@@ -11,20 +11,24 @@ const _BIOME_SUBDIRS: Dictionary = {
 
 const _WATER_EDGE_SUBDIRS: Array = ["lirios_acuaticos", "juncos"]
 
+## Density thresholds per biome (0.0 = no objects, 1.0 = every cell filled).
+## Each cell rolls rng.randf() and places an object only when it's below
+## a per-cell threshold from [min, max]. Values halved from original to
+## keep the 120×120 map playable without visual overload.
 const _DENSITY_MIN: Dictionary = {
-	0: 0.005,
-	1: 0.02,
-	2: 0.06,
-	3: 0.03,
-	4: 0.04,
+	0: 0.002,   # WATER — only edge reeds/lilies, very sparse
+	1: 0.01,    # SAND — occasional cactus/palm
+	2: 0.03,    # GRASS — sparse trees, visible clearings
+	3: 0.015,   # DIRT — occasional rocks/bushes
+	4: 0.02,    # MOUNTAIN — scattered rocks
 }
 
 const _DENSITY_MAX: Dictionary = {
-	0: 0.015,
-	1: 0.04,
-	2: 0.12,
-	3: 0.06,
-	4: 0.08,
+	0: 0.006,
+	1: 0.02,
+	2: 0.055,
+	3: 0.03,
+	4: 0.04,
 }
 
 const _JITTER_X: float = 8.0
@@ -57,6 +61,10 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			var biome: int = biome_map[y][x] as int
 
 			if _is_cliff_cell(x, y, elev_map, width, height):
+				continue
+
+			# Minimum spacing: skip if any neighbor already has an object
+			if _has_neighbor_object(x, y, placed):
 				continue
 
 			var key: String = "%d,%d" % [x, y]
@@ -110,14 +118,12 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			sprite.scale = Vector2(scale_val, scale_val)
 			body.add_child(sprite)
 
-			# Shadow sprite using object silhouette
+			# Soft elliptical ground shadow — using cached textures per size
 			var shadow := Sprite2D.new()
 			shadow.name = "Shadow"
-			shadow.texture = tex
-			shadow.offset = Vector2(0, 0)
-			shadow.scale = Vector2(scale_val, scale_val)
-			shadow.self_modulate = Color(0, 0, 0, 0.25)
-			shadow.z_index = -1
+			shadow.texture = _get_shadow_tex(scale_val)
+			shadow.centered = true
+			shadow.z_index = -10
 			body.add_child(shadow)
 
 			var col_size: Vector2
@@ -140,6 +146,12 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 			container.add_child(body)
 			placed[key] = true
 			total_count += 1
+
+	# Second pass: scatter small ground-cover sprites (flowers, grass tufts)
+	# on grass/dirt cells for natural terrain detail — no collision.
+	var ground_cover_count := _place_ground_cover(biome_map, elev_map, rng, container, placed, width, height)
+	if ground_cover_count > 0:
+		print("ObjectPlacer: ", ground_cover_count, " ground-cover sprites")
 
 	return { "count": total_count, "warnings": warnings }
 
@@ -193,6 +205,19 @@ func _is_cliff_cell(x: int, y: int, elev_map: Array, width: int, height: int) ->
 	return false
 
 
+func _has_neighbor_object(x: int, y: int, placed: Dictionary) -> bool:
+	var neighbors: Array = [
+		[x - 1, y], [x + 1, y],
+		[x, y - 1], [x, y + 1],
+		[x - 1, y - 1], [x + 1, y - 1],
+		[x - 1, y + 1], [x + 1, y + 1],
+	]
+	for n in neighbors:
+		if placed.has("%d,%d" % [n[0], n[1]]):
+			return true
+	return false
+
+
 func _is_water_edge(x: int, y: int, biome_map: Array, width: int, height: int) -> bool:
 	var neighbors: Array = [
 		[x - 1, y],
@@ -208,6 +233,97 @@ func _is_water_edge(x: int, y: int, biome_map: Array, width: int, height: int) -
 		if (biome_map[ny][nx] as int) != 0:
 			return true
 	return false
+
+
+# ── Ground cover (terrain detail) ────────────────────────────────
+
+func _place_ground_cover(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator,
+		container: Node, placed: Dictionary, width: int, height: int) -> int:
+	## Scatter small visual-only sprites (flowers, tiny bushes) on grass and
+	## dirt cells to create natural-looking terrain detail like AoE-style
+	## ground texture. These have NO collision and do NOT block movement.
+	var textures: Dictionary = SpriteCache.get_entorno_textures()
+	var decor_pool: Array = textures.get("decorations", [])
+	if decor_pool.is_empty():
+		return 0
+
+	# Filter to only small ground-level textures (flowers, tiny bushes)
+	var grounders: Array = []
+	for tex in decor_pool:
+		var path: String = tex.resource_path
+		# Only use flowers and small bushes for ground cover
+		if path.contains("/flores/") or path.contains("/hongos/"):
+			grounders.append(tex)
+	if grounders.is_empty():
+		return 0
+
+	var count := 0
+	var density: float = 0.04  # ~4% of grass cells
+
+	for y in height:
+		for x in width:
+			var biome: int = biome_map[y][x] as int
+			# Only on grass and dirt
+			if biome != 2 and biome != 3:
+				continue
+			# Skip cells with existing objects
+			if placed.has("%d,%d" % [x, y]):
+				continue
+			# Skip cliff cells
+			if _is_cliff_cell(x, y, elev_map, width, height):
+				continue
+			# Density roll
+			if rng.randf() > density:
+				continue
+
+			var tex: Texture2D = grounders[rng.randi() % grounders.size()]
+			var sprite := Sprite2D.new()
+			sprite.texture = tex
+			sprite.name = "GroundCover_%d_%d" % [x, y]
+			sprite.position = _cell_to_world(x, y) + Vector2(
+				rng.randf_range(-8, 8), rng.randf_range(-4, 4)
+			)
+			sprite.scale = Vector2(0.8, 0.8) if biome == 2 else Vector2(0.6, 0.6)
+			# Subtle random hue variation so ground cover doesn't look cloned
+			sprite.self_modulate = Color(
+				1.0,
+				0.85 + rng.randf() * 0.15,
+				0.85 + rng.randf() * 0.15,
+				0.9
+			)
+			container.add_child(sprite)
+			count += 1
+
+	return count
+
+
+# ── Shadow texture cache ──────────────────────────────────────────
+var _shadow_cache: Dictionary = {}
+
+func _get_shadow_tex(scale_val: float) -> Texture2D:
+	## Return a cached soft elliptical shadow texture for the given scale.
+	## Creates one on first use; reuses on subsequent calls.
+	var key := int(scale_val * 10)
+	if _shadow_cache.has(key):
+		return _shadow_cache[key]
+
+	var size := int(mini(scale_val * 32, 96))
+	size = maxi(size, 16)
+	var half := size / 2
+	var img := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	for y in size:
+		for x in size:
+			var dx := (x - half + 0.5) / (half * 0.8)
+			var dy := (y - half + 0.5) / half
+			var dist := sqrt(dx * dx + dy * dy)
+			var alpha := 0.0
+			if dist < 1.0:
+				alpha = clampf(1.0 - dist * dist, 0.0, 1.0) * 0.35
+			img.set_pixel(x, y, Color(0, 0, 0, alpha))
+
+	var tex := ImageTexture.create_from_image(img)
+	_shadow_cache[key] = tex
+	return tex
 
 
 func _cell_to_world(x: int, y: int) -> Vector2:

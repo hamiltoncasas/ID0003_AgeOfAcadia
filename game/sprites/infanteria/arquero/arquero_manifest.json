@@ -11,10 +11,10 @@
   ],
   "animations": {
     "idle": {
-      "frames": 3
+      "frames": 2
     },
     "walk": {
-      "frames": 4
+      "frames": 2
     },
     "attack": {
       "frames": 2
@@ -23,7 +23,7 @@
       "frames": 2
     },
     "death": {
-      "frames": 3
+      "frames": 2
     }
   },
   "strips": [
@@ -31,61 +31,61 @@
       "animation": "idle",
       "direction": "front",
       "file": "arquero_idle_front.png",
-      "frames": 3
+      "frames": 2
     },
     {
       "animation": "idle",
       "direction": "front_angle",
       "file": "arquero_idle_front_angle.png",
-      "frames": 3
+      "frames": 2
     },
     {
       "animation": "idle",
       "direction": "profile",
       "file": "arquero_idle_profile.png",
-      "frames": 3
+      "frames": 1
     },
     {
       "animation": "idle",
       "direction": "back_angle",
       "file": "arquero_idle_back_angle.png",
-      "frames": 3
+      "frames": 1
     },
     {
       "animation": "idle",
       "direction": "back",
       "file": "arquero_idle_back.png",
-      "frames": 3
+      "frames": 2
     },
     {
       "animation": "walk",
       "direction": "front",
       "file": "arquero_walk_front.png",
-      "frames": 4
+      "frames": 2
     },
     {
       "animation": "walk",
       "direction": "front_angle",
       "file": "arquero_walk_front_angle.png",
-      "frames": 4
+      "frames": 2
     },
     {
       "animation": "walk",
       "direction": "profile",
       "file": "arquero_walk_profile.png",
-      "frames": 4
+      "frames": 1
     },
     {
       "animation": "walk",
       "direction": "back_angle",
       "file": "arquero_walk_back_angle.png",
-      "frames": 4
+      "frames": 1
     },
     {
       "animation": "walk",
       "direction": "back",
       "file": "arquero_walk_back.png",
-      "frames": 4
+      "frames": 2
     },
     {
       "animation": "attack",
@@ -103,13 +103,13 @@
       "animation": "attack",
       "direction": "profile",
       "file": "arquero_attack_profile.png",
-      "frames": 2
+      "frames": 1
     },
     {
       "animation": "attack",
       "direction": "back_angle",
       "file": "arquero_attack_back_angle.png",
-      "frames": 2
+      "frames": 1
     },
     {
       "animation": "attack",
@@ -133,13 +133,13 @@
       "animation": "hurt",
       "direction": "profile",
       "file": "arquero_hurt_profile.png",
-      "frames": 2
+      "frames": 1
     },
     {
       "animation": "hurt",
       "direction": "back_angle",
       "file": "arquero_hurt_back_angle.png",
-      "frames": 2
+      "frames": 1
     },
     {
       "animation": "hurt",
@@ -151,31 +151,31 @@
       "animation": "death",
       "direction": "front",
       "file": "arquero_death_front.png",
-      "frames": 3
+      "frames": 2
     },
     {
       "animation": "death",
       "direction": "front_angle",
       "file": "arquero_death_front_angle.png",
-      "frames": 3
+      "frames": 2
     },
     {
       "animation": "death",
       "direction": "profile",
       "file": "arquero_death_profile.png",
-      "frames": 3
+      "frames": 1
     },
     {
       "animation": "death",
       "direction": "back_angle",
       "file": "arquero_death_back_angle.png",
-      "frames": 3
+      "frames": 1
     },
     {
       "animation": "death",
       "direction": "back",
       "file": "arquero_death_back.png",
-      "frames": 3
+      "frames": 2
     }
   ]
 }

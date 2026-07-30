@@ -1,0 +1,882 @@
+{
+  "grass_center_0": [
+    0,
+    0
+  ],
+  "grass_center_1": [
+    1,
+    0
+  ],
+  "grass_center_2": [
+    2,
+    0
+  ],
+  "grass_center_3": [
+    3,
+    0
+  ],
+  "grass_center_4": [
+    4,
+    0
+  ],
+  "grass_center_5": [
+    5,
+    0
+  ],
+  "grass_center_6": [
+    6,
+    0
+  ],
+  "grass_center_7": [
+    7,
+    0
+  ],
+  "dirt_center_0": [
+    8,
+    0
+  ],
+  "dirt_center_1": [
+    9,
+    0
+  ],
+  "dirt_center_2": [
+    10,
+    0
+  ],
+  "dirt_center_3": [
+    11,
+    0
+  ],
+  "dirt_center_4": [
+    12,
+    0
+  ],
+  "dirt_center_5": [
+    13,
+    0
+  ],
+  "dirt_center_6": [
+    14,
+    0
+  ],
+  "dirt_center_7": [
+    15,
+    0
+  ],
+  "sand_center_0": [
+    16,
+    0
+  ],
+  "sand_center_1": [
+    17,
+    0
+  ],
+  "sand_center_2": [
+    18,
+    0
+  ],
+  "sand_center_3": [
+    19,
+    0
+  ],
+  "sand_center_4": [
+    20,
+    0
+  ],
+  "sand_center_5": [
+    21,
+    0
+  ],
+  "sand_center_6": [
+    22,
+    0
+  ],
+  "sand_center_7": [
+    23,
+    0
+  ],
+  "path_center_0": [
+    24,
+    0
+  ],
+  "path_center_1": [
+    25,
+    0
+  ],
+  "path_center_2": [
+    26,
+    0
+  ],
+  "path_center_3": [
+    27,
+    0
+  ],
+  "path_center_4": [
+    28,
+    0
+  ],
+  "path_center_5": [
+    29,
+    0
+  ],
+  "path_center_6": [
+    30,
+    0
+  ],
+  "path_center_7": [
+    31,
+    0
+  ],
+  "forest_floor_center_0": [
+    0,
+    1
+  ],
+  "forest_floor_center_1": [
+    1,
+    1
+  ],
+  "forest_floor_center_2": [
+    2,
+    1
+  ],
+  "forest_floor_center_3": [
+    3,
+    1
+  ],
+  "forest_floor_center_4": [
+    4,
+    1
+  ],
+  "forest_floor_center_5": [
+    5,
+    1
+  ],
+  "forest_floor_center_6": [
+    6,
+    1
+  ],
+  "forest_floor_center_7": [
+    7,
+    1
+  ],
+  "shallow_water_center_0": [
+    8,
+    1
+  ],
+  "shallow_water_center_1": [
+    9,
+    1
+  ],
+  "shallow_water_center_2": [
+    10,
+    1
+  ],
+  "shallow_water_center_3": [
+    11,
+    1
+  ],
+  "shallow_water_center_4": [
+    12,
+    1
+  ],
+  "shallow_water_center_5": [
+    13,
+    1
+  ],
+  "shallow_water_center_6": [
+    14,
+    1
+  ],
+  "shallow_water_center_7": [
+    15,
+    1
+  ],
+  "deep_water_center_0": [
+    16,
+    1
+  ],
+  "deep_water_center_1": [
+    17,
+    1
+  ],
+  "deep_water_center_2": [
+    18,
+    1
+  ],
+  "deep_water_center_3": [
+    19,
+    1
+  ],
+  "deep_water_center_4": [
+    20,
+    1
+  ],
+  "deep_water_center_5": [
+    21,
+    1
+  ],
+  "deep_water_center_6": [
+    22,
+    1
+  ],
+  "deep_water_center_7": [
+    23,
+    1
+  ],
+  "cliff_face_0": [
+    24,
+    1
+  ],
+  "cliff_face_1": [
+    25,
+    1
+  ],
+  "cliff_face_2": [
+    26,
+    1
+  ],
+  "cliff_face_3": [
+    27,
+    1
+  ],
+  "cliff_face_4": [
+    28,
+    1
+  ],
+  "cliff_face_5": [
+    29,
+    1
+  ],
+  "cliff_face_6": [
+    30,
+    1
+  ],
+  "cliff_face_7": [
+    31,
+    1
+  ],
+  "cliff_rock_0": [
+    0,
+    2
+  ],
+  "cliff_rock_1": [
+    1,
+    2
+  ],
+  "cliff_rock_2": [
+    2,
+    2
+  ],
+  "cliff_rock_3": [
+    3,
+    2
+  ],
+  "cliff_rock_4": [
+    4,
+    2
+  ],
+  "cliff_rock_5": [
+    5,
+    2
+  ],
+  "cliff_rock_6": [
+    6,
+    2
+  ],
+  "cliff_rock_7": [
+    7,
+    2
+  ],
+  "shore_sand_0": [
+    8,
+    2
+  ],
+  "shore_sand_1": [
+    9,
+    2
+  ],
+  "shore_sand_2": [
+    10,
+    2
+  ],
+  "shore_sand_3": [
+    11,
+    2
+  ],
+  "shore_sand_4": [
+    12,
+    2
+  ],
+  "shore_sand_5": [
+    13,
+    2
+  ],
+  "shore_sand_6": [
+    14,
+    2
+  ],
+  "shore_sand_7": [
+    15,
+    2
+  ],
+  "river_water_0": [
+    16,
+    2
+  ],
+  "river_water_1": [
+    17,
+    2
+  ],
+  "river_water_2": [
+    18,
+    2
+  ],
+  "river_water_3": [
+    19,
+    2
+  ],
+  "river_water_4": [
+    20,
+    2
+  ],
+  "river_water_5": [
+    21,
+    2
+  ],
+  "river_water_6": [
+    22,
+    2
+  ],
+  "river_water_7": [
+    23,
+    2
+  ],
+  "grass_to_dirt_corner_in_ne_grass_to_dirt": [
+    24,
+    2
+  ],
+  "grass_to_dirt_corner_in_nw_grass_to_dirt": [
+    25,
+    2
+  ],
+  "grass_to_dirt_corner_in_se_grass_to_dirt": [
+    26,
+    2
+  ],
+  "grass_to_dirt_corner_in_sw_grass_to_dirt": [
+    27,
+    2
+  ],
+  "grass_to_dirt_corner_out_ne_grass_to_dirt": [
+    28,
+    2
+  ],
+  "grass_to_dirt_corner_out_nw_grass_to_dirt": [
+    29,
+    2
+  ],
+  "grass_to_dirt_corner_out_se_grass_to_dirt": [
+    30,
+    2
+  ],
+  "grass_to_dirt_corner_out_sw_grass_to_dirt": [
+    31,
+    2
+  ],
+  "grass_to_dirt_edge_e_grass_to_dirt": [
+    0,
+    3
+  ],
+  "grass_to_dirt_edge_n_grass_to_dirt": [
+    1,
+    3
+  ],
+  "grass_to_dirt_edge_s_grass_to_dirt": [
+    2,
+    3
+  ],
+  "grass_to_dirt_edge_w_grass_to_dirt": [
+    3,
+    3
+  ],
+  "grass_to_sand_corner_in_ne_grass_to_sand": [
+    4,
+    3
+  ],
+  "grass_to_sand_corner_in_nw_grass_to_sand": [
+    5,
+    3
+  ],
+  "grass_to_sand_corner_in_se_grass_to_sand": [
+    6,
+    3
+  ],
+  "grass_to_sand_corner_in_sw_grass_to_sand": [
+    7,
+    3
+  ],
+  "grass_to_sand_corner_out_ne_grass_to_sand": [
+    8,
+    3
+  ],
+  "grass_to_sand_corner_out_nw_grass_to_sand": [
+    9,
+    3
+  ],
+  "grass_to_sand_corner_out_se_grass_to_sand": [
+    10,
+    3
+  ],
+  "grass_to_sand_corner_out_sw_grass_to_sand": [
+    11,
+    3
+  ],
+  "grass_to_sand_edge_e_grass_to_sand": [
+    12,
+    3
+  ],
+  "grass_to_sand_edge_n_grass_to_sand": [
+    13,
+    3
+  ],
+  "grass_to_sand_edge_s_grass_to_sand": [
+    14,
+    3
+  ],
+  "grass_to_sand_edge_w_grass_to_sand": [
+    15,
+    3
+  ],
+  "grass_to_path_corner_in_ne_grass_to_path": [
+    16,
+    3
+  ],
+  "grass_to_path_corner_in_nw_grass_to_path": [
+    17,
+    3
+  ],
+  "grass_to_path_corner_in_se_grass_to_path": [
+    18,
+    3
+  ],
+  "grass_to_path_corner_in_sw_grass_to_path": [
+    19,
+    3
+  ],
+  "grass_to_path_corner_out_ne_grass_to_path": [
+    20,
+    3
+  ],
+  "grass_to_path_corner_out_nw_grass_to_path": [
+    21,
+    3
+  ],
+  "grass_to_path_corner_out_se_grass_to_path": [
+    22,
+    3
+  ],
+  "grass_to_path_corner_out_sw_grass_to_path": [
+    23,
+    3
+  ],
+  "grass_to_path_edge_e_grass_to_path": [
+    24,
+    3
+  ],
+  "grass_to_path_edge_n_grass_to_path": [
+    25,
+    3
+  ],
+  "grass_to_path_edge_s_grass_to_path": [
+    26,
+    3
+  ],
+  "grass_to_path_edge_w_grass_to_path": [
+    27,
+    3
+  ],
+  "grass_to_forest_floor_corner_in_ne_grass_to_forest_floor": [
+    28,
+    3
+  ],
+  "grass_to_forest_floor_corner_in_nw_grass_to_forest_floor": [
+    29,
+    3
+  ],
+  "grass_to_forest_floor_corner_in_se_grass_to_forest_floor": [
+    30,
+    3
+  ],
+  "grass_to_forest_floor_corner_in_sw_grass_to_forest_floor": [
+    31,
+    3
+  ],
+  "grass_to_forest_floor_corner_out_ne_grass_to_forest_floor": [
+    0,
+    4
+  ],
+  "grass_to_forest_floor_corner_out_nw_grass_to_forest_floor": [
+    1,
+    4
+  ],
+  "grass_to_forest_floor_corner_out_se_grass_to_forest_floor": [
+    2,
+    4
+  ],
+  "grass_to_forest_floor_corner_out_sw_grass_to_forest_floor": [
+    3,
+    4
+  ],
+  "grass_to_forest_floor_edge_e_grass_to_forest_floor": [
+    4,
+    4
+  ],
+  "grass_to_forest_floor_edge_n_grass_to_forest_floor": [
+    5,
+    4
+  ],
+  "grass_to_forest_floor_edge_s_grass_to_forest_floor": [
+    6,
+    4
+  ],
+  "grass_to_forest_floor_edge_w_grass_to_forest_floor": [
+    7,
+    4
+  ],
+  "dirt_to_path_corner_in_ne_dirt_to_path": [
+    8,
+    4
+  ],
+  "dirt_to_path_corner_in_nw_dirt_to_path": [
+    9,
+    4
+  ],
+  "dirt_to_path_corner_in_se_dirt_to_path": [
+    10,
+    4
+  ],
+  "dirt_to_path_corner_in_sw_dirt_to_path": [
+    11,
+    4
+  ],
+  "dirt_to_path_corner_out_ne_dirt_to_path": [
+    12,
+    4
+  ],
+  "dirt_to_path_corner_out_nw_dirt_to_path": [
+    13,
+    4
+  ],
+  "dirt_to_path_corner_out_se_dirt_to_path": [
+    14,
+    4
+  ],
+  "dirt_to_path_corner_out_sw_dirt_to_path": [
+    15,
+    4
+  ],
+  "dirt_to_path_edge_e_dirt_to_path": [
+    16,
+    4
+  ],
+  "dirt_to_path_edge_n_dirt_to_path": [
+    17,
+    4
+  ],
+  "dirt_to_path_edge_s_dirt_to_path": [
+    18,
+    4
+  ],
+  "dirt_to_path_edge_w_dirt_to_path": [
+    19,
+    4
+  ],
+  "dirt_to_sand_corner_in_ne_dirt_to_sand": [
+    20,
+    4
+  ],
+  "dirt_to_sand_corner_in_nw_dirt_to_sand": [
+    21,
+    4
+  ],
+  "dirt_to_sand_corner_in_se_dirt_to_sand": [
+    22,
+    4
+  ],
+  "dirt_to_sand_corner_in_sw_dirt_to_sand": [
+    23,
+    4
+  ],
+  "dirt_to_sand_corner_out_ne_dirt_to_sand": [
+    24,
+    4
+  ],
+  "dirt_to_sand_corner_out_nw_dirt_to_sand": [
+    25,
+    4
+  ],
+  "dirt_to_sand_corner_out_se_dirt_to_sand": [
+    26,
+    4
+  ],
+  "dirt_to_sand_corner_out_sw_dirt_to_sand": [
+    27,
+    4
+  ],
+  "dirt_to_sand_edge_e_dirt_to_sand": [
+    28,
+    4
+  ],
+  "dirt_to_sand_edge_n_dirt_to_sand": [
+    29,
+    4
+  ],
+  "dirt_to_sand_edge_s_dirt_to_sand": [
+    30,
+    4
+  ],
+  "dirt_to_sand_edge_w_dirt_to_sand": [
+    31,
+    4
+  ],
+  "sand_to_shallow_water_corner_in_ne_sand_to_shallow_water": [
+    0,
+    5
+  ],
+  "sand_to_shallow_water_corner_in_nw_sand_to_shallow_water": [
+    1,
+    5
+  ],
+  "sand_to_shallow_water_corner_in_se_sand_to_shallow_water": [
+    2,
+    5
+  ],
+  "sand_to_shallow_water_corner_in_sw_sand_to_shallow_water": [
+    3,
+    5
+  ],
+  "sand_to_shallow_water_corner_out_ne_sand_to_shallow_water": [
+    4,
+    5
+  ],
+  "sand_to_shallow_water_corner_out_nw_sand_to_shallow_water": [
+    5,
+    5
+  ],
+  "sand_to_shallow_water_corner_out_se_sand_to_shallow_water": [
+    6,
+    5
+  ],
+  "sand_to_shallow_water_corner_out_sw_sand_to_shallow_water": [
+    7,
+    5
+  ],
+  "sand_to_shallow_water_edge_e_sand_to_shallow_water": [
+    8,
+    5
+  ],
+  "sand_to_shallow_water_edge_n_sand_to_shallow_water": [
+    9,
+    5
+  ],
+  "sand_to_shallow_water_edge_s_sand_to_shallow_water": [
+    10,
+    5
+  ],
+  "sand_to_shallow_water_edge_w_sand_to_shallow_water": [
+    11,
+    5
+  ],
+  "sand_to_shore_sand_corner_in_ne_sand_to_shore_sand": [
+    12,
+    5
+  ],
+  "sand_to_shore_sand_corner_in_nw_sand_to_shore_sand": [
+    13,
+    5
+  ],
+  "sand_to_shore_sand_corner_in_se_sand_to_shore_sand": [
+    14,
+    5
+  ],
+  "sand_to_shore_sand_corner_in_sw_sand_to_shore_sand": [
+    15,
+    5
+  ],
+  "sand_to_shore_sand_corner_out_ne_sand_to_shore_sand": [
+    16,
+    5
+  ],
+  "sand_to_shore_sand_corner_out_nw_sand_to_shore_sand": [
+    17,
+    5
+  ],
+  "sand_to_shore_sand_corner_out_se_sand_to_shore_sand": [
+    18,
+    5
+  ],
+  "sand_to_shore_sand_corner_out_sw_sand_to_shore_sand": [
+    19,
+    5
+  ],
+  "sand_to_shore_sand_edge_e_sand_to_shore_sand": [
+    20,
+    5
+  ],
+  "sand_to_shore_sand_edge_n_sand_to_shore_sand": [
+    21,
+    5
+  ],
+  "sand_to_shore_sand_edge_s_sand_to_shore_sand": [
+    22,
+    5
+  ],
+  "sand_to_shore_sand_edge_w_sand_to_shore_sand": [
+    23,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_in_ne_shallow_water_to_deep_water": [
+    24,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_in_nw_shallow_water_to_deep_water": [
+    25,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_in_se_shallow_water_to_deep_water": [
+    26,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_in_sw_shallow_water_to_deep_water": [
+    27,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_out_ne_shallow_water_to_deep_water": [
+    28,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_out_nw_shallow_water_to_deep_water": [
+    29,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_out_se_shallow_water_to_deep_water": [
+    30,
+    5
+  ],
+  "shallow_water_to_deep_water_corner_out_sw_shallow_water_to_deep_water": [
+    31,
+    5
+  ],
+  "shallow_water_to_deep_water_edge_e_shallow_water_to_deep_water": [
+    0,
+    6
+  ],
+  "shallow_water_to_deep_water_edge_n_shallow_water_to_deep_water": [
+    1,
+    6
+  ],
+  "shallow_water_to_deep_water_edge_s_shallow_water_to_deep_water": [
+    2,
+    6
+  ],
+  "shallow_water_to_deep_water_edge_w_shallow_water_to_deep_water": [
+    3,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_in_ne_shallow_water_to_shore_sand": [
+    4,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_in_nw_shallow_water_to_shore_sand": [
+    5,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_in_se_shallow_water_to_shore_sand": [
+    6,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_in_sw_shallow_water_to_shore_sand": [
+    7,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_out_ne_shallow_water_to_shore_sand": [
+    8,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_out_nw_shallow_water_to_shore_sand": [
+    9,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_out_se_shallow_water_to_shore_sand": [
+    10,
+    6
+  ],
+  "shallow_water_to_shore_sand_corner_out_sw_shallow_water_to_shore_sand": [
+    11,
+    6
+  ],
+  "shallow_water_to_shore_sand_edge_e_shallow_water_to_shore_sand": [
+    12,
+    6
+  ],
+  "shallow_water_to_shore_sand_edge_n_shallow_water_to_shore_sand": [
+    13,
+    6
+  ],
+  "shallow_water_to_shore_sand_edge_s_shallow_water_to_shore_sand": [
+    14,
+    6
+  ],
+  "shallow_water_to_shore_sand_edge_w_shallow_water_to_shore_sand": [
+    15,
+    6
+  ],
+  "shallow_water_to_river_water_corner_in_ne_shallow_water_to_river_water": [
+    16,
+    6
+  ],
+  "shallow_water_to_river_water_corner_in_nw_shallow_water_to_river_water": [
+    17,
+    6
+  ],
+  "shallow_water_to_river_water_corner_in_se_shallow_water_to_river_water": [
+    18,
+    6
+  ],
+  "shallow_water_to_river_water_corner_in_sw_shallow_water_to_river_water": [
+    19,
+    6
+  ],
+  "shallow_water_to_river_water_corner_out_ne_shallow_water_to_river_water": [
+    20,
+    6
+  ],
+  "shallow_water_to_river_water_corner_out_nw_shallow_water_to_river_water": [
+    21,
+    6
+  ],
+  "shallow_water_to_river_water_corner_out_se_shallow_water_to_river_water": [
+    22,
+    6
+  ],
+  "shallow_water_to_river_water_corner_out_sw_shallow_water_to_river_water": [
+    23,
+    6
+  ],
+  "shallow_water_to_river_water_edge_e_shallow_water_to_river_water": [
+    24,
+    6
+  ],
+  "shallow_water_to_river_water_edge_n_shallow_water_to_river_water": [
+    25,
+    6
+  ],
+  "shallow_water_to_river_water_edge_s_shallow_water_to_river_water": [
+    26,
+    6
+  ],
+  "shallow_water_to_river_water_edge_w_shallow_water_to_river_water": [
+    27,
+    6
+  ]
+}

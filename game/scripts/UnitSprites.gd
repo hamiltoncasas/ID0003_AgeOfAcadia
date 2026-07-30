@@ -74,14 +74,25 @@ func build_sprite_frames() -> SpriteFrames:
 	## Build SpriteFrames with one animation per anim+direction combo.
 	## Each animation is named "{anim}_{direction}" (e.g. "idle_front").
 	## Frames are AtlasTexture slices from the strip PNG.
+	## IMPORTANT: frame count is clamped to the actual texture width to
+	## prevent out-of-bounds AtlasTexture regions that cause flickering.
 	var frames := SpriteFrames.new()
 
 	for anim in animations:
 		for dir in animations[anim]:
 			var strip_data: Dictionary = animations[anim][dir]
 			var tex: Texture2D = _load_texture(strip_data["path"])
-			var frame_count: int = strip_data["frames"]
+			var declared_frames: int = strip_data["frames"]
 			var anim_name: String = get_animation_name(anim, dir)
+
+			# Auto-detect max frames from actual texture dimensions
+			var tex_size := tex.get_size()
+			var max_frames := int(tex_size.x / frame_width)
+			var frame_count: int = mini(declared_frames, max_frames)
+			if frame_count < declared_frames:
+				push_warning("UnitSprites: clamping ", anim_name, " from ",
+					declared_frames, " to ", frame_count,
+					" frames (texture ", tex_size.x, "x", tex_size.y, ")")
 
 			frames.add_animation(anim_name)
 			frames.set_animation_speed(anim_name, strip_data.get("speed", 5.0))
