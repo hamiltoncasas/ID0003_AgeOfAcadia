@@ -28,20 +28,24 @@ func generate(seed, w, h, ts):
 	# Generate river
 	var river_cells = _generate_river(w, h, rng, river_noise)
 
+	# Center grid on camera at (150, 150) instead of (0, 0)
+	var ox = -100
+	var oy = -100
 	var layer = TileMapLayer.new()
 	layer.tile_set = ts
 	var count = 0
 
 	for y in range(h):
 		for x in range(w):
-			var pos = Vector2i(x, y)
-			var val = noise.get_noise_2d(x, y)
-			var det = detail.get_noise_2d(x, y) * 0.15
+			var pos = Vector2i(x + ox, y + oy)
+			var local_pos = Vector2i(x, y)
+			var val = noise.get_noise_2d(local_pos.x, local_pos.y)
+			var det = detail.get_noise_2d(local_pos.x, local_pos.y) * 0.15
 			var hval = val + det
 			var sid = 0
 
 			# River primero (sobrescribe todo)
-			if river_cells.has(pos):
+			if river_cells.has(local_pos):
 				sid = 6
 			# Agua
 			elif hval < -0.25:
