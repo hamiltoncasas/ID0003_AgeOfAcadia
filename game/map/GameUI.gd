@@ -9,6 +9,8 @@ func set_minimap_data(biome_map, w, h):
 	_bm = biome_map
 	_bw = w
 	_bh = h
+	if is_inside_tree():
+		_build()
 
 
 func _ready():
@@ -17,40 +19,37 @@ func _ready():
 
 
 func _build():
-	_add_stone_borders()
+	_add_borders()
 	_add_minimap()
 
 
-func _get_vp_size():
+func _get_vp():
 	return get_viewport().get_visible_rect().size
 
 
-func _add_stone_borders():
-	var top_tex = load("res://sprites/ui/border_top.png")
-	if not top_tex:
-		return
-	var vp = _get_vp_size()
+func _add_borders():
+	var vp = _get_vp()
+	var col = Color(0.2, 0.15, 0.1)
 	
-	var top = TextureRect.new()
-	top.texture = top_tex
-	top.stretch_mode = TextureRect.STRETCH_TILE
-	top.size = Vector2(vp.x, 64)
-	top.position = Vector2(0, 0)
-	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(top)
+	# Top bar
+	var t = ColorRect.new()
+	t.color = col
+	t.size = Vector2(vp.x, 48)
+	t.position = Vector2(0, 0)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(t)
 	
-	var bot = TextureRect.new()
-	bot.texture = top_tex
-	bot.stretch_mode = TextureRect.STRETCH_TILE
-	bot.size = Vector2(vp.x, 64)
-	bot.position = Vector2(0, vp.y - 64)
-	bot.scale = Vector2(1, -1)
-	bot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(bot)
+	# Bottom bar
+	var b = ColorRect.new()
+	b.color = col
+	b.size = Vector2(vp.x, 48)
+	b.position = Vector2(0, vp.y - 48)
+	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(b)
 
 
 func _add_minimap():
-	var vp = _get_vp_size()
+	var vp = _get_vp()
 	
 	# Frame
 	var frame = ColorRect.new()
@@ -60,62 +59,62 @@ func _add_minimap():
 	frame.position = Vector2(vp.x - 182, vp.y - 182)
 	add_child(frame)
 	
-	# Generate minimap texture
+	# Minimap image
 	var mm = TextureRect.new()
 	mm.name = "Minimap"
 	mm.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	mm.size = Vector2(160, 160)
 	mm.position = Vector2(vp.x - 176, vp.y - 176)
 	mm.stretch_mode = TextureRect.STRETCH_KEEP
-	
-	if _bm.size() > 0:
-		var img = Image.create(_bw, _bh, false, Image.FORMAT_RGBA8)
-		var colors = {
-			0: Color(0.15, 0.3, 0.6),  # water
-			1: Color(0.5, 0.4, 0.3),   # sand
-			2: Color(0.25, 0.55, 0.15),# grass
-			3: Color(0.4, 0.3, 0.2),   # dirt
-			4: Color(0.15, 0.25, 0.1), # forest
-			5: Color(0.3, 0.5, 0.6),   # shallow water
-			6: Color(0.1, 0.2, 0.5),   # deep water
-		}
-		for y in range(min(_bh, _bm.size())):
-			for x in range(min(_bw, _bm[0].size())):
-				var hval = _bm[y][x]
-				var col = colors[2]  # default grass
-				if hval < -0.25:
-					col = colors[0]  # water
-				elif hval < -0.1:
-					col = colors[5]  # shallow
-				elif hval < 0.05:
-					col = colors[1]  # sand
-				elif hval < 0.35:
-					col = colors[2]  # grass
-				elif hval < 0.5:
-					col = colors[3]  # dirt
-				elif hval < 0.6:
-					col = colors[4]  # forest
-				else:
-					col = colors[3]
-				img.set_pixel(x, y, col)
-		
-		# Resize to minimap size
-		img.resize(160, 160, Image.INTERPOLATE_NEAREST)
-		mm.texture = ImageTexture.create_from_image(img)
-	
 	add_child(mm)
+	
+	_generate_minimap(mm)
+
+
+func _generate_minimap(mm):
+	if _bm.size() == 0:
+		return
+	
+	var img = Image.create(_bw, _bh, false, Image.FORMAT_RGBA8)
+	for y in range(min(_bh, _bm.size())):
+		for x in range(min(_bw, _bm[0].size())):
+			var hval = _bm[y][x]
+			var col = Color(0.25, 0.55, 0.15)
+			if hval < -0.25:
+				col = Color(0.15, 0.3, 0.6)
+			elif hval < -0.1:
+				col = Color(0.3, 0.5, 0.6)
+			elif hval < 0.05:
+				col = Color(0.76, 0.7, 0.5)
+			elif hval < 0.35:
+				col = Color(0.25, 0.55, 0.15)
+			elif hval < 0.5:
+				col = Color(0.5, 0.4, 0.3)
+			elif hval < 0.6:
+				col = Color(0.15, 0.25, 0.1)
+			else:
+				col = Color(0.5, 0.4, 0.3)
+			img.set_pixel(x, y, col)
+	
+	img.resize(160, 160, Image.INTERPOLATE_NEAREST)
+	mm.texture = ImageTexture.create_from_image(img)
 
 
 func _process(_delta):
-	var vp = _get_vp_size()
+	var vp = _get_vp()
+	var children = get_children()
+	# Resize borders (first 2 children)
+	for i in range(min(2, children.size())):
+		var c = children[i]
+		if c is ColorRect:
+			c.size.x = vp.x
+			if i == 1:
+				c.position.y = vp.y - 48
+	
+	# Reposition minimap
 	var frame = get_node_or_null("MiniFrame")
 	var mm = get_node_or_null("Minimap")
 	if frame:
 		frame.position = Vector2(vp.x - 182, vp.y - 182)
 	if mm:
 		mm.position = Vector2(vp.x - 176, vp.y - 176)
-	var children = get_children()
-	for c in children:
-		if c is TextureRect and c.name != "Minimap":
-			c.size.x = vp.x
-			c.position.y = vp.y - 64 if c.scale.y < 0 else 0
