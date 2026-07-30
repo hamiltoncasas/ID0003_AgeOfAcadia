@@ -155,7 +155,7 @@ func generate(seed, w, h, ts):
 					contour_count += 1
 
 	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count, " contours: ", contour_count)
-	return [layer, contours, heights, elev_map]
+	return [layer, contours, heights, elev_map, biome_map]
 
 
 func _make_contour_tex():

@@ -1,7 +1,8 @@
 extends Node2D
 
-var _elev_map = []
-var _coord_label = null
+	var _elev_map = []
+	var _biome_map = []
+	var _coord_label = null
 
 
 func _ready():
@@ -18,12 +19,14 @@ func _ready():
 	var result = gen.generate(seed_val, 300, 300, ts)
 	if result is Array:
 		if result.size() >= 1: add_child(result[0])  # terrain
-		if result.size() >= 2: add_child(result[1])  # contours (on top)
-		if result.size() >= 3: add_child(result[2])  # heights (behind)
+		if result.size() >= 2: add_child(result[1])  # contours
+		if result.size() >= 3: add_child(result[2])  # heights
 		if result.size() >= 4: _elev_map = result[3]
+		if result.size() >= 5: _biome_map = result[4]
 	
 	# UI overlay (borders + minimap)
 	var ui = load("res://map/GameUI.gd").new()
+	ui.set_minimap_data(_biome_map, 300, 300)
 	add_child(ui)
 
 	_add_mouse_overlay()
