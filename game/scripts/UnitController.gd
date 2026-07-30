@@ -299,6 +299,10 @@ func _is_water_at(pos: Vector2) -> bool:
 		var sid = _tilemap_layer.get_cell_source_id(Vector2i(cx, cy))
 		if sid == 5 or sid == 6:
 			return true
+	elif _water_map.is_empty() and biome_data.is_empty():
+		# No data sources available
+		push_warning("Unit ", unit_index, ": no water data available — TileMapLayer is null, water_map and biome_data empty")
+		return false
 	
 	# SECONDARY: water_map (explicit boolean from ProceduralGeneration)
 	if not _water_map.is_empty() and cy >= 0 and cy < _water_map.size() and cx >= 0 and cx < _water_map[cy].size():
