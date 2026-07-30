@@ -45,9 +45,13 @@ var _unit_sprites: Resource = null
 ## RTS selection state
 var _selected: bool = false
 var _selection_ring: Sprite2D = null
-## Right-click direct movement target (INF = not moving)
+## Right-click movement system
 var _move_target: Vector2 = Vector2.INF
+var _path_waypoints: Array = []
+var _path_index: int = 0
 const MOVE_ARRIVAL_DIST: float = 12.0
+## Navigation
+var _nav: NavigationSystem = null
 
 ## Health system
 var health: int = 100
@@ -143,12 +147,32 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom(-ZOOM_STEP)
 
 
-## Right-click handler: set direct movement target.
+## Right-click handler: A* pathfinding with water avoidance.
 func _move_to(target: Vector2) -> void:
-	_move_target = target
+	# Build nav system on first use
+	if _nav == null and not biome_data.is_empty():
+		_nav = NavigationSystem.new()
+		_nav.build(biome_data)
+		print("Nav system built")
+	
+	# Try A* pathfinding
+	_path_waypoints = []
+	_path_index = 0
+	if _nav != null:
+		_path_waypoints = _nav.find_path(global_position, target)
+		print("Path: ", _path_waypoints.size(), " waypoints")
+	
+	if _path_waypoints.size() >= 2:
+		_path_index = 1  # skip current position
+		_move_target = _path_waypoints[_path_index]
+	else:
+		# Fallback: direct movement (may cross water)
+		_move_target = target
+		_path_waypoints = []
+	
 	_state = State.WALK
 	_spawn_move_pointer(_move_target)
-	print(">>> MOVE_TO: target=", target, " pos=", global_position)
+	print(">>> MOVE_TO: target=", target, " first_waypoint=", _move_target)
 
 
 func _physics_process(delta: float) -> void:
@@ -158,25 +182,29 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# RTS movement: simplify — direct movement toward target, no pathfinding
+	# RTS movement with A* pathfinding
 	if _move_target != Vector2.INF:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
-			# Only block if currently standing IN water (edge case)
-			# Don't block future steps — let character walk freely
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
 		else:
-			# Arrived
-			velocity = Vector2.ZERO
-			_state = State.IDLE
-			_update_animation(_last_direction)
-			_move_target = Vector2.INF
-			print(">>> ARRIVED at destination")
+			# Reached current waypoint — advance or stop
+			if _path_index < _path_waypoints.size() - 1:
+				_path_index += 1
+				_move_target = _path_waypoints[_path_index]
+				print("  -> waypoint ", _path_index, "/", _path_waypoints.size()-1)
+			else:
+				# Final destination reached
+				velocity = Vector2.ZERO
+				_state = State.IDLE
+				_update_animation(_last_direction)
+				_move_target = Vector2.INF
+				_path_waypoints = []
+				print(">>> ARRIVED at final destination")
 	else:
-		# No movement target
 		if _state == State.WALK:
 			_state = State.IDLE
 			_update_animation(_last_direction)
@@ -325,6 +353,8 @@ func attack(target_pos: Vector2 = Vector2.INF) -> void:
 		return
 	# Stop movement when attacking
 	_move_target = Vector2.INF
+	_path_waypoints = []
+	_path_index = 0
 	velocity = Vector2.ZERO
 	_state = State.ATTACK
 	_update_animation(_last_direction)
@@ -488,6 +518,8 @@ func get_max_health() -> int:
 ## Stop current movement immediately.
 func stop_movement() -> void:
 	_move_target = Vector2.INF
+	_path_waypoints = []
+	_path_index = 0
 	velocity = Vector2.ZERO
 	if _state in [State.IDLE, State.WALK]:
 		_state = State.IDLE

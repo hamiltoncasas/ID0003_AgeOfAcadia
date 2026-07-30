@@ -151,67 +151,58 @@ func _generate_minimap(mm):
 func _add_action_panel():
 	var vp = _get_vp()
 	
-	# Panel backdrop — billboard style with stone look
+	# Panel backdrop — embedded in bottom bar area
 	_action_panel = ColorRect.new()
 	_action_panel.name = "ActionPanel"
 	_action_panel.color = Color(0.12, 0.08, 0.05, 0.9)
-	_action_panel.size = Vector2(260, 90)
-	_action_panel.position = Vector2(vp.x / 2.0 - 130, vp.y - 100)
+	_action_panel.size = Vector2(280, 46)
+	_action_panel.position = Vector2(vp.x / 2.0 - 140, vp.y - 48)
 	_action_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_action_panel.visible = false
 	add_child(_action_panel)
 	
-	# Panel border (stone-style)
-	var border = ColorRect.new()
-	border.name = "PanelBorder"
-	border.color = Color(0.3, 0.22, 0.15, 1.0)
-	border.size = Vector2(260, 3)
-	border.position = Vector2(0, 0)
-	border.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_action_panel.add_child(border)
-	
-	# Title
+	# Title + Health inline
 	var title = Label.new()
 	title.name = "PanelTitle"
 	title.text = "ARCHER"
 	title.add_theme_color_override("font_color", Color(0.9, 0.7, 0.3))
-	title.add_theme_font_size_override("font_size", 14)
-	title.position = Vector2(8, 6)
+	title.add_theme_font_size_override("font_size", 12)
+	title.position = Vector2(6, 3)
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(title)
 	
-	# Health bar in panel
+	# Compact health bar
 	var hp_bg = ColorRect.new()
 	hp_bg.name = "PanelHPBG"
 	hp_bg.color = Color(0.15, 0.05, 0.05, 0.8)
-	hp_bg.size = Vector2(100, 10)
-	hp_bg.position = Vector2(8, 26)
+	hp_bg.size = Vector2(80, 7)
+	hp_bg.position = Vector2(6, 20)
 	hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(hp_bg)
 	var hp_fill = ColorRect.new()
 	hp_fill.name = "PanelHPFill"
 	hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
-	hp_fill.size = Vector2(100, 10)
-	hp_fill.position = Vector2(8, 26)
+	hp_fill.size = Vector2(80, 7)
+	hp_fill.position = Vector2(6, 20)
 	hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(hp_fill)
 	var hp_lbl = Label.new()
 	hp_lbl.name = "PanelHPLabel"
-	hp_lbl.text = "100/100"
+	hp_lbl.text = "100"
 	hp_lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.8))
-	hp_lbl.add_theme_font_size_override("font_size", 9)
-	hp_lbl.position = Vector2(112, 26)
+	hp_lbl.add_theme_font_size_override("font_size", 8)
+	hp_lbl.position = Vector2(90, 19)
 	hp_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_action_panel.add_child(hp_lbl)
 	
-	# Action buttons with functionality
+	# Compact action buttons
 	var actions = [
-		{"label": "⚔ Attack", "action": "attack"},
+		{"label": "⚔ Atk", "action": "attack"},
 		{"label": "✋ Stop", "action": "stop"},
 		{"label": "🏹 Fire", "action": "fire"},
 	]
-	var bx = 8
-	var by = 44
+	var bx = 120
+	var by = 4
 	for act in actions:
 		var btn = ColorRect.new()
 		btn.color = Color(0.25, 0.18, 0.12, 0.9)
@@ -288,9 +279,9 @@ func _process(_delta):
 				else:
 					hp_fill.color = Color(0.9, 0.2, 0.2, 0.9)
 				hp_lbl.text = str(hp) + "/" + str(max_hp)
-	# Reposition action panel
+	# Reposition action panel (bottom bar area)
 	if _action_panel and _action_panel.visible:
-		_action_panel.position = Vector2(vp.x / 2.0 - 130, vp.y - 100)
+		_action_panel.position = Vector2(vp.x / 2.0 - 140, vp.y - 48)
 
 
 ## Handle action panel button clicks.
