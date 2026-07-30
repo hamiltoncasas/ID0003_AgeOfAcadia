@@ -57,6 +57,16 @@ func generate(seed, w, h, ts):
 			else:
 				elev_map[y].append(2)
 
+	# Debug elevation counts
+	var e0 = 0; var e1 = 0; var e2 = 0
+	for y in range(h):
+		for x in range(w):
+			var e = elev_map[y][x]
+			if e == 0: e0 += 1
+			elif e == 1: e1 += 1
+			else: e2 += 1
+	print("Elev: 0=", e0, " 1=", e1, " 2=", e2)
+
 	# Step 2: Place terrain tiles
 	var layer = TileMapLayer.new()
 	layer.tile_set = ts
@@ -95,8 +105,8 @@ func generate(seed, w, h, ts):
 	var edge_count = 0
 
 	# Edge texture: thin dark line ON TOP of terrain
-	var edge_tex = _make_edge_texture(128, 8, Color(0.2, 0.15, 0.1, 0.5))
-	var deep_edge_tex = _make_edge_texture(128, 12, Color(0.15, 0.1, 0.05, 0.6))
+	var edge_tex = _make_edge_texture(128, 16, Color(0.8, 0.6, 0.3, 0.8))
+	var deep_edge_tex = _make_edge_texture(128, 24, Color(0.9, 0.4, 0.2, 0.9))
 
 	for y in range(h):
 		for x in range(w):
@@ -141,15 +151,14 @@ func generate(seed, w, h, ts):
 func _make_edge_texture(w, h, color):
 	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
-		var alpha = color.a
-		if y < 2:
-			alpha = 0.0
-		# From pixel 2 to h, fully opaque (thin visible line)
+		var alpha = 0.0
+		if y >= h - 6:
+			alpha = color.a  # Bottom 6px fully opaque
+		elif y >= h - 10:
+			alpha = color.a * 0.5  # Fade
 		var c = Color(color.r, color.g, color.b, alpha)
 		for x in range(w):
-			# Only color the center portion, edges transparent
-			if x > 16 and x < w - 16:
-				img.set_pixel(x, y, c)
+			img.set_pixel(x, y, c)
 	return ImageTexture.create_from_image(img)
 
 
