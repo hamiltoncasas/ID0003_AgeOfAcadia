@@ -294,17 +294,17 @@ func _is_water_at(pos: Vector2) -> bool:
 	var cx = int(round(px)) - _cell_ox
 	var cy = int(round(py)) - _cell_oy
 	
-	# EXPLICIT water_map (most reliable — boolean from ProceduralGeneration)
-	if not _water_map.is_empty() and cy >= 0 and cy < _water_map.size() and cx >= 0 and cx < _water_map[cy].size():
-		return _water_map[cy][cx]
-	
-	# TileMapLayer fallback
+	# PRIMARY: TileMapLayer (ground truth — reads actual placed tiles)
 	if _tilemap_layer != null:
 		var sid = _tilemap_layer.get_cell_source_id(Vector2i(cx, cy))
 		if sid == 5 or sid == 6:
 			return true
 	
-	# biome_data last resort
+	# SECONDARY: water_map (explicit boolean from ProceduralGeneration)
+	if not _water_map.is_empty() and cy >= 0 and cy < _water_map.size() and cx >= 0 and cx < _water_map[cy].size():
+		return _water_map[cy][cx]
+	
+	# FALLBACK: biome_data
 	if not biome_data.is_empty() and cy >= 0 and cy < biome_data.size() and cx >= 0 and cx < biome_data[cy].size():
 		return biome_data[cy][cx] == 0
 	
