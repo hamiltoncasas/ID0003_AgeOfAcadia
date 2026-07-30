@@ -204,16 +204,17 @@ func _physics_process(delta: float) -> void:
 			_update_animation(_last_direction)
 		velocity = Vector2.ZERO
 
-	# Separation: add gentle push from nearby units to prevent clumping
-	if _move_target == Vector2.INF:
-		var parent = get_parent()
-		if parent:
-			for child in parent.get_children():
-				if child == self or not child is UnitController:
-					continue
-				var d = global_position.distance_to(child.global_position)
-				if d < 40.0 and d > 0.01:
-					velocity += (global_position - child.global_position).normalized() * (40.0 - d) * 2.0
+	# Separation: push away from nearby units (always active, stronger when overlapping)
+	var parent = get_parent()
+	if parent:
+		for child in parent.get_children():
+			if child == self or not child is UnitController:
+				continue
+			var d = global_position.distance_to(child.global_position)
+			if d > 0.01 and d < 50.0:
+				var force = (50.0 - d) / 50.0
+				force = force * force * 200.0  # exponential push closer they are
+				velocity += (global_position - child.global_position).normalized() * force
 
 	move_and_slide()
 	
