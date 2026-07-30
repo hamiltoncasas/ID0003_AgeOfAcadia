@@ -51,33 +51,25 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
 
-	# 3 elevation layers with offsets for terrain relief
-	for elev in 3:
-		var layer := TileMapLayer.new()
-		layer.name = "Elevation" + str(elev)
-		layer.position = Vector2(0, -elev * 32)
-		if tile_set:
-			layer.tile_set = tile_set
-
-		var layer_count := 0
-		for y in height:
-			for x in width:
-				if elev_map[y][x] != elev:
-					continue
-				# All biomes use source 0 (grass)
-				layer.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
-				tile_count += 1
-				layer_count += 1
-
-		print("Elevation ", elev, ": ", layer_count, " tiles")
-		layers.append(layer)
+	# Single layer — all cells, no elevation offsets
+	# Multiple layers with Y offsets create visual gaps at elevation boundaries
+	var layer := TileMapLayer.new()
+	layer.name = "Terrain"
+	if tile_set:
+		layer.tile_set = tile_set
+	for y in height:
+		for x in width:
+			layer.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+			tile_count += 1
+	layers.append(layer)
+	print("Terrain: ", tile_count, " tiles")
 
 	return {
 		"success": true,
 		"biome_map": biome_map,
 		"elev_map": elev_map,
 		"layers": layers,
-		"cliff_node": null,
+		"cliff_node": null,  # no cliffs — they create visual gaps
 		"tile_count": tile_count,
 	}
 
