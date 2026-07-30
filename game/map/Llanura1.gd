@@ -16,11 +16,6 @@ func _ready():
 	if layer:
 		add_child(layer)
 	
-	# Center on 300x300 grid
-	var cam = get_node("Camera2D")
-	if cam:
-		cam.position = Vector2(0, 9600)
-	
 	print("Ready")
 
 
