@@ -1,23 +1,27 @@
 extends Node2D
 
 func _ready():
-	RenderingServer.set_default_clear_color(Color("#6b8f4e"))
+	RenderingServer.set_default_clear_color(Color("#4a7c3f"))
 
-	var tile_set = _build_tileset()
-	if not tile_set:
+	var ts = _build_tileset()
+	if not ts:
 		return
 
 	var seed_val = randi()
-	print("Map seed: ", seed_val)
+	print("Seed: ", seed_val)
 
+	# Generate 160x160 — fills the screen at zoom 0.12
 	var gen = load("res://map/ProceduralGeneration.gd").new()
-	# Generate at 240x240 with offset so the camera sees varied terrain
-	var layer = gen.generate(seed_val, 160, 160, tile_set)
+	var layer = gen.generate(seed_val, 160, 160, ts)
 	if layer:
 		add_child(layer)
-		print("Ready")
-	else:
-		print("ERROR: generation failed")
+	
+	# Center camera on 160x160 grid
+	var cam = get_node("Camera2D")
+	if cam:
+		cam.position = Vector2(0, 5120)
+	
+	print("Ready")
 
 
 func _build_tileset():
@@ -37,7 +41,6 @@ func _build_tileset():
 	]:
 		var tex = load(path)
 		if not tex:
-			push_error("Cannot load: ", path)
 			continue
 		var src = TileSetAtlasSource.new()
 		src.texture = tex

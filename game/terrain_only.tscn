@@ -5,7 +5,7 @@
 [node name="Root" type="Node2D"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(0, 5120)
+position = Vector2(0, 0)
 zoom = Vector2(0.12, 0.12)
 
 [node name="Terrain" type="Node2D" parent="."]
