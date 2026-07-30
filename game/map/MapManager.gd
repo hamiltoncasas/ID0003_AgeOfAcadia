@@ -15,7 +15,6 @@ var object_container: Node2D = null
 
 
 func _ready():
-	# y_sort_enabled disabled to avoid interfering with TileMapLayer rendering
 	RenderingServer.set_default_clear_color(Color("#4a7c3f"))
 
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -41,7 +40,6 @@ func _ready():
 	var layers = result.layers
 	for layer in layers:
 		add_child(layer)
-		print("Layer class: ", layer.get_class())
 	if result.cliff_node:
 		add_child(result.cliff_node)
 
