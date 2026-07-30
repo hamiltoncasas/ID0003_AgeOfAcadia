@@ -14,30 +14,25 @@ const SCROLL_SPEED: float = 600.0
 const DRAG_THRESHOLD: float = 5.0  # pixels before drag starts
 
 var _dragging: bool = false
-var _left_dragging: bool = false
 var _drag_start: Vector2 = Vector2.ZERO
 var _cam_start: Vector2 = Vector2.ZERO
 
 
 func _ready():
-	# Manual follow smoothing via _process, not built-in
 	position_smoothing_enabled = false
-	# Start zoomed out to show most of the 120x120 map
 	zoom = Vector2(0.13, 0.13)
 
 
 func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		match event.button_index:
-			drag_button, MOUSE_BUTTON_LEFT:
+			MOUSE_BUTTON_MIDDLE:
 				if event.pressed:
 					_dragging = true
-					_left_dragging = (event.button_index == MOUSE_BUTTON_LEFT)
 					_drag_start = event.position
 					_cam_start = position
 				else:
 					_dragging = false
-					_left_dragging = false
 			MOUSE_BUTTON_WHEEL_UP:
 				if event.pressed:
 					_zoom(ZOOM_STEP)
@@ -52,15 +47,11 @@ func _unhandled_input(event: InputEvent):
 
 	if event is InputEventMouseMotion:
 		if _dragging:
-			# Only start visual drag after threshold (avoids tiny accidental scrolls)
 			var dist = event.position.distance_to(_drag_start)
 			if dist > DRAG_THRESHOLD:
 				var delta: Vector2 = (event.position - _drag_start) * zoom
 				position = _cam_start - delta
 				_clamp_position()
-				# Consume left-drag so UnitController doesn't fire arrow while dragging
-				if _left_dragging:
-					get_viewport().set_input_as_handled()
 
 
 func _process(delta: float):

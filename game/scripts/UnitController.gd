@@ -45,6 +45,8 @@ var _unit_sprites: Resource = null
 ## RTS selection state
 var _selected: bool = false
 var _selection_ring: Sprite2D = null
+## Unique unit index for formation/group management
+var unit_index: int = 0
 ## Right-click movement system
 var _move_target: Vector2 = Vector2.INF
 var _path_waypoints: Array = []
@@ -113,26 +115,7 @@ func set_unit_sprites(sprites: Resource) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_LEFT:
-				if not _is_dead:
-					var click_pos = get_global_mouse_position()
-					if click_pos.distance_to(global_position) < 48.0:
-						_set_selected(true)
-					else:
-						_set_selected(false)
-			MOUSE_BUTTON_RIGHT:
-				print(">>> RIGHT CLICK on UnitController at frame ", Engine.get_process_frames())
-				if not _is_dead:
-					if not _selected:
-						_set_selected(true)
-					_move_to(get_global_mouse_position())
-			MOUSE_BUTTON_WHEEL_UP:
-				_zoom(ZOOM_STEP)
-			MOUSE_BUTTON_WHEEL_DOWN:
-				_zoom(-ZOOM_STEP)
-	
+	# Only handle keyboard actions here — mouse selection/move is in GameUI
 	if event.is_action_pressed("test_attack"):
 		attack()
 	elif event.is_action_pressed("test_hurt"):
@@ -531,7 +514,7 @@ func stop_movement() -> void:
 func is_selected() -> bool:
 	return _selected
 
-func _set_selected(val: bool) -> void:
+func set_selected(val: bool) -> void:
 	_selected = val
 	if _selection_ring:
 		_selection_ring.visible = val

@@ -8,6 +8,15 @@ var camera_ref: Camera2D = null
 var _player_marker: ColorRect = null
 var _mm_click_area: ColorRect = null
 var _action_panel: ColorRect = null
+var _drag_box: ColorRect = null
+
+## All selectable units
+var _all_units: Array = []
+## Currently selected units
+var _selected_units: Array = []
+## Drag selection state
+var _drag_start: Vector2 = Vector2.ZERO
+var _is_dragging: bool = false
 
 ## Action panel state
 var _panel_visible: bool = false
@@ -22,9 +31,11 @@ func set_minimap_data(biome_map, w, h):
 		_build()
 
 
-## Set player reference so minimap can show a position dot.
-func set_player_ref(node: Node2D):
-	player_ref = node
+## Set all units for selection management.
+func set_units(units: Array):
+	_all_units = units
+	if units.size() > 0:
+		player_ref = units[0]
 
 
 ## Set camera reference so minimap clicks can move the viewport.
@@ -41,6 +52,7 @@ func _build():
 	_add_borders()
 	_add_minimap()
 	_add_action_panel()
+	_add_drag_box()
 
 
 func _get_vp():
@@ -147,21 +159,139 @@ func _generate_minimap(mm):
 	mm.texture = ImageTexture.create_from_image(img)
 
 
+## Create the selection drag box overlay (hidden by default).
+func _add_drag_box():
+	_drag_box = ColorRect.new()
+	_drag_box.name = "DragBox"
+	_drag_box.color = Color(0.3, 0.8, 0.3, 0.15)
+	_drag_box.size = Vector2(0, 0)
+	_drag_box.position = Vector2(0, 0)
+	_drag_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_drag_box.visible = false
+	add_child(_drag_box)
+
+
+## Handle selection + group movement input.
+func _input(event: InputEvent):
+	if event is InputEventMouseButton:
+		if event.button_index == MOUSE_BUTTON_LEFT:
+			if event.pressed:
+				_is_dragging = true
+				_drag_start = event.position
+				_drag_box.position = event.position
+				_drag_box.size = Vector2(0, 0)
+				_drag_box.visible = true
+			else:
+				_is_dragging = false
+				_drag_box.visible = false
+				# On release: check which units are in the drag rect
+				_update_selection(event.position)
+		elif event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+			# Right-click: move all selected units in formation
+			_move_selected_units()
+	
+	if event is InputEventMouseMotion and _is_dragging:
+		var rect = Rect2(_drag_start, event.position - _drag_start)
+		_drag_box.position = rect.position
+		_drag_box.size = rect.size
+
+
+## Update selection based on drag rectangle.
+func _update_selection(end_pos: Vector2):
+	var rect = Rect2(
+		min(_drag_start.x, end_pos.x),
+		min(_drag_start.y, end_pos.y),
+		abs(end_pos.x - _drag_start.x),
+		abs(end_pos.y - _drag_start.y)
+	)
+	
+	# If drag was very small, treat as single click on nearest unit
+	if rect.size.length() < 10:
+		_select_single(end_pos)
+		return
+	
+	# Box selection
+	_selected_units = []
+	for unit in _all_units:
+		if unit and is_instance_valid(unit):
+			var screen_pos = get_viewport().get_camera_2d().unproject_position(unit.global_position)
+			if rect.has_point(screen_pos):
+				_selected_units.append(unit)
+	
+	_refresh_selection_visuals()
+	if _selected_units.size() > 0:
+		player_ref = _selected_units[0]
+
+
+## Select the nearest unit to a click position.
+func _select_single(click_pos: Vector2):
+	var nearest = null
+	var nearest_dist = 999999.0
+	for unit in _all_units:
+		if unit and is_instance_valid(unit):
+			var screen_pos = get_viewport().get_camera_2d().unproject_position(unit.global_position)
+			var dist = screen_pos.distance_to(click_pos)
+			if dist < 48.0 and dist < nearest_dist:
+				nearest = unit
+				nearest_dist = dist
+	
+	_selected_units = []
+	if nearest:
+		_selected_units.append(nearest)
+		player_ref = nearest
+	
+	_refresh_selection_visuals()
+
+
+## Update selection rings on all units.
+func _refresh_selection_visuals():
+	for unit in _all_units:
+		if unit and unit.has_method("set_selected"):
+			var is_sel = _selected_units.has(unit)
+			unit.set_selected(is_sel)
+
+
+## Move all selected units toward last right-click position in formation.
+func _move_selected_units():
+	if _selected_units.is_empty():
+		return
+	
+	var mouse_world = Vector2.ZERO
+	if get_viewport().get_camera_2d():
+		mouse_world = get_viewport().get_camera_2d().get_global_mouse_position()
+	else:
+		return
+	
+	var count = _selected_units.size()
+	var spread = 60.0  # distance between units in formation
+	var angle_offset = 0.0
+	
+	for i in range(count):
+		var unit = _selected_units[i]
+		if not unit or not unit.has_method("_move_to"):
+			continue
+		# Fan-out formation: spread units in an arc around the click point
+		var a = angle_offset + (float(i) / count - 0.5) * 1.5
+		var offset = Vector2(cos(a), sin(a) * 0.5) * spread
+		var target = mouse_world + offset
+		unit._move_to(target)
+
+
 ## Create the action panel (hidden by default).
 func _add_action_panel():
 	var vp = _get_vp()
 	
-	# Panel backdrop — embedded in bottom bar area, ALWAYS visible
+	# Panel backdrop — only visible when units are selected
 	_action_panel = ColorRect.new()
 	_action_panel.name = "ActionPanel"
 	_action_panel.color = Color(0.12, 0.08, 0.05, 0.9)
 	_action_panel.size = Vector2(300, 46)
 	_action_panel.position = Vector2(vp.x / 2.0 - 150, vp.y - 48)
 	_action_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_action_panel.visible = true
+	_action_panel.visible = false
 	add_child(_action_panel)
 	
-	# Title — always visible
+	# Title (shows count when multiple selected)
 	var title = Label.new()
 	title.name = "PanelTitle"
 	title.text = "ARCHER"
@@ -257,31 +387,44 @@ func _process(_delta):
 	# Update player marker on minimap
 	_update_player_marker()
 	
-	# Show action buttons when player is selected (panel itself always visible)
-	if player_ref and player_ref.has_method("is_selected"):
-		var sel = player_ref.is_selected()
-		if sel != _panel_visible:
-			_panel_visible = sel
-			for btn in _panel_buttons:
-				btn.visible = sel
-		# Update health display (always — panel is always visible)
-	if _action_panel and player_ref and player_ref.has_method("get_health"):
-		var hp_fill = _action_panel.get_node_or_null("PanelHPFill")
-		var hp_lbl = _action_panel.get_node_or_null("PanelHPLabel")
-		if hp_fill and hp_lbl:
-			var hp = player_ref.get_health()
-			var max_hp = player_ref.get_max_health()
-			var ratio = float(hp) / max_hp
-			hp_fill.size.x = 80.0 * ratio
-			if ratio > 0.6:
-				hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
-			elif ratio > 0.3:
-				hp_fill.color = Color(0.9, 0.8, 0.2, 0.9)
-			else:
-				hp_fill.color = Color(0.9, 0.2, 0.2, 0.9)
-			hp_lbl.text = str(hp) + "/" + str(max_hp)
-	# Reposition action panel (bottom bar area, always visible)
+	# Action panel visibility based on selection
+	var has_selection = _selected_units.size() > 0
 	if _action_panel:
+		if has_selection != _panel_visible:
+			_panel_visible = has_selection
+			_action_panel.visible = has_selection
+			for btn in _panel_buttons:
+				btn.visible = has_selection
+		# Update panel content
+		if has_selection:
+			var title = _action_panel.get_node_or_null("PanelTitle")
+			if title:
+				if _selected_units.size() > 1:
+					title.text = "ARCHERS x%d" % _selected_units.size()
+				else:
+					title.text = "ARCHER"
+			# Average health
+			var hp_fill = _action_panel.get_node_or_null("PanelHPFill")
+			var hp_lbl = _action_panel.get_node_or_null("PanelHPLabel")
+			if hp_fill and hp_lbl:
+				var total_hp = 0
+				var total_max = 0
+				for u in _selected_units:
+					if u and u.has_method("get_health"):
+						total_hp += u.get_health()
+						total_max += u.get_max_health()
+				if total_max > 0:
+					var ratio = float(total_hp) / total_max
+					hp_fill.size.x = 80.0 * ratio
+					if ratio > 0.6:
+						hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
+					elif ratio > 0.3:
+						hp_fill.color = Color(0.9, 0.8, 0.2, 0.9)
+					else:
+						hp_fill.color = Color(0.9, 0.2, 0.2, 0.9)
+					hp_lbl.text = str(total_hp) + "/" + str(total_max)
+	# Reposition action panel if visible
+	if _action_panel and _panel_visible:
 		_action_panel.position = Vector2(vp.x / 2.0 - 150, vp.y - 48)
 
 

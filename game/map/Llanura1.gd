@@ -45,62 +45,86 @@ func _generate():
 	placer.place_objects(_biome_map, _elev_map, rng, object_container)
 	add_child(object_container)
 	
-	# ── Player Unit ─────────────────────────────────────────────
-	var player = UnitController.new()
-	# Start at a visible central area
-	player.position = Vector2(0, 3500)
-	player.name = "PlayerUnit"
-	# Collision shape for physics (objects, walls)
-	var col_shape = CollisionShape2D.new()
-	col_shape.name = "CollisionShape2D"
-	var rect = RectangleShape2D.new()
-	rect.size = Vector2(32, 48)
-	col_shape.shape = rect
-	player.add_child(col_shape)
-	# UnitController expects child nodes for animation and camera
-	var anim_sprite = AnimatedSprite2D.new()
-	anim_sprite.name = "AnimatedSprite2D"
-	anim_sprite.sprite_frames = SpriteFrames.new()
-	anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	player.add_child(anim_sprite)
-	var cam = Camera2D.new()
-	cam.name = "Camera2D"
-	cam.enabled = false  # main camera is CameraController
-	player.add_child(cam)
-	# Health bar above the character
-	var health_bar_bg = ColorRect.new()
-	health_bar_bg.name = "HealthBarBG"
-	health_bar_bg.color = Color(0.2, 0.05, 0.05, 0.8)
-	health_bar_bg.size = Vector2(36, 5)
-	health_bar_bg.position = Vector2(-18, -74)
-	health_bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player.add_child(health_bar_bg)
-	var health_bar_fill = ColorRect.new()
-	health_bar_fill.name = "HealthBar"
-	health_bar_fill.color = Color(0.2, 0.9, 0.2, 0.9)
-	health_bar_fill.size = Vector2(36, 5)
-	health_bar_fill.position = Vector2(-18, -74)
-	health_bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	player.add_child(health_bar_fill)
-	
-	# Load arquero animations from manifest
+	# ── Create 6 Archer Units ────────────────────────────────────
+	var units := []
 	var manifest_path = "res://sprites/infanteria/arquero/arquero_manifest.json"
 	var unit_sprites = UnitSprites.load_from_manifest(manifest_path)
-	if unit_sprites:
-		player.set_unit_sprites(unit_sprites)
-	# Pass biome + elevation data for water detection
-	player.biome_data = _biome_map
-	player.elev_data = _elev_map
-	add_child(player)
 	
+	# Starting positions in a line formation
+	var start_positions = [
+		Vector2(-100, 3400),
+		Vector2(0, 3500),
+		Vector2(100, 3600),
+		Vector2(-50, 3550),
+		Vector2(50, 3450),
+		Vector2(-150, 3500)
+	]
+	
+	for i in range(6):
+		var unit = UnitController.new()
+		unit.position = start_positions[i]
+		unit.name = "Archer_%d" % i
+		unit.unit_index = i
+		
+		# Collision shape — layer 2 so units don't collide with each other
+		var col_shape = CollisionShape2D.new()
+		var rect = RectangleShape2D.new()
+		rect.size = Vector2(24, 36)
+		col_shape.shape = rect
+		col_shape.name = "CollisionShape2D"
+		unit.add_child(col_shape)
+		unit.collision_layer = 2  # unit layer
+		unit.collision_mask = 1   # collide with objects (layer 1), not other units
+		
+		# AnimatedSprite2D for arquero animations
+		var anim_sprite = AnimatedSprite2D.new()
+		anim_sprite.name = "AnimatedSprite2D"
+		anim_sprite.sprite_frames = SpriteFrames.new()
+		anim_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+		unit.add_child(anim_sprite)
+		
+		# Disabled Camera2D (main camera is CameraController)
+		var cam = Camera2D.new()
+		cam.name = "Camera2D"
+		cam.enabled = false
+		unit.add_child(cam)
+		
+		# Health bar
+		var hp_bg = ColorRect.new()
+		hp_bg.name = "HealthBarBG"
+		hp_bg.color = Color(0.2, 0.05, 0.05, 0.8)
+		hp_bg.size = Vector2(36, 5)
+		hp_bg.position = Vector2(-18, -74)
+		hp_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		unit.add_child(hp_bg)
+		var hp_fill = ColorRect.new()
+		hp_fill.name = "HealthBar"
+		hp_fill.color = Color(0.2, 0.9, 0.2, 0.9)
+		hp_fill.size = Vector2(36, 5)
+		hp_fill.position = Vector2(-18, -74)
+		hp_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		unit.add_child(hp_fill)
+		
+		# Load arquero sprites
+		if unit_sprites:
+			unit.set_unit_sprites(unit_sprites)
+		
+		# Biome data for water detection
+		unit.biome_data = _biome_map
+		unit.elev_data = _elev_map
+		
+		add_child(unit)
+		units.append(unit)
+	
+	# Camera follows first unit by default
 	var camera = get_node_or_null("../CameraController")
-	if camera:
-		camera.follow_target = player
+	if camera and units.size() > 0:
+		camera.follow_target = units[0]
 	
 	# UI overlay
 	var ui = load("res://map/GameUI.gd").new()
 	ui.set_minimap_data(_biome_map, 300, 300)
-	ui.set_player_ref(player)
+	ui.set_units(units)
 	if camera:
 		ui.set_camera_ref(camera)
 	add_child(ui)
