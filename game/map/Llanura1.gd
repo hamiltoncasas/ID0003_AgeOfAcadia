@@ -1,13 +1,16 @@
 extends Node2D
 
-	var _elev_map = []
-	var _biome_map = []
-	var _coord_label = null
+var _elev_map = []
+var _biome_map = []
 
 
 func _ready():
 	RenderingServer.set_default_clear_color(Color("#4a7c3f"))
+	# Defer heavy generation so scene transition completes first
+	call_deferred("_generate")
 
+
+func _generate():
 	var ts = _build_tileset()
 	if not ts:
 		return
@@ -24,11 +27,10 @@ func _ready():
 		if result.size() >= 4: _elev_map = result[3]
 		if result.size() >= 5: _biome_map = result[4]
 	
-	# UI overlay (borders + minimap)
+	# UI overlay
 	var ui = load("res://map/GameUI.gd").new()
 	ui.set_minimap_data(_biome_map, 300, 300)
 	add_child(ui)
-
 	_add_mouse_overlay()
 	print("Ready")
 
@@ -39,6 +41,7 @@ func _add_mouse_overlay():
 	bg.color = Color(0, 0, 0, 0.5)
 	bg.size = Vector2(1, 22)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ui.add_child(bg)
 	var lbl = Label.new()
 	lbl.name = "InfoLabel"
@@ -49,6 +52,9 @@ func _add_mouse_overlay():
 	add_child(ui)
 	_coord_label = lbl
 	set_process(true)
+
+
+var _coord_label = null
 
 
 func _process(_delta):
@@ -73,7 +79,6 @@ func _build_tileset():
 	ts.tile_size = Vector2i(128, 64)
 	ts.tile_shape = 1
 	ts.tile_layout = 1
-
 	for path in [
 		"res://sprites/terrain/strips/grass.png",
 		"res://sprites/terrain/strips/dirt.png",
@@ -91,5 +96,4 @@ func _build_tileset():
 		src.texture_region_size = Vector2i(128, 64)
 		src.create_tile(Vector2i(0, 0), Vector2i(1, 1))
 		ts.add_source(src)
-
 	return ts
