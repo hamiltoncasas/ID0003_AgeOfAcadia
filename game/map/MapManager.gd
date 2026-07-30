@@ -24,11 +24,12 @@ func _ready():
 	if not tile_set:
 		push_error("MapManager: Failed to load terrain.tres")
 		return
+	print("MapManager: terrain.tres loaded, sources: ", tile_set.get_source_count())
 
 	var gen = _ProceduralGeneration.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed
-	var result = gen.generate(map_seed, map_width, map_height, tile_set, 0)
+	var result = gen.generate(map_seed, map_width, map_height, tile_set)
 	if not result.success:
 		push_error("MapManager: Generation failed: ", result.error)
 		return
