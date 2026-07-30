@@ -1,18 +1,20 @@
 extends RefCounted
 class_name ProceduralGeneration
 
-## Procedural isometric terrain with elevation layers.
-## Sources: 0=grass, 1=dirt, 2=sand, 3=path, 4=forest_floor, 5=shallow_water, 6=deep_water
+## Procedural isometric terrain — all biomes unified to grass texture.
+## Source 0 (grass) is the only FLUX.2 pro texture that rendered correctly.
 
 enum Biome { WATER = 0, SAND = 1, GRASS = 2, DIRT = 3, MOUNTAIN = 4 }
 
-# biome → source_id (matches terrain.tres source order)
+# All biomas usan source 0 (grass) porque es la única textura
+# que FLUX.2 pro generó correctamente. Las otras (shallow_water,
+# sand, dirt) salieron con colores incorrectos.
 const BIOME_SOURCE: Dictionary = {
-	Biome.WATER: 5,     # shallow_water
-	Biome.SAND: 2,      # sand
+	Biome.WATER: 0,     # all → grass
+	Biome.SAND: 0,      # all → grass
 	Biome.GRASS: 0,     # grass
-	Biome.DIRT: 1,      # dirt
-	Biome.MOUNTAIN: 1,  # dirt (best match)
+	Biome.DIRT: 0,      # all → grass
+	Biome.MOUNTAIN: 0,  # all → grass
 }
 
 
