@@ -8,6 +8,7 @@ const UnitController = preload("res://scripts/UnitController.gd")
 
 var _elev_map = []
 var _biome_map = []
+var _tilemap_layer: TileMapLayer = null
 
 
 func _ready():
@@ -27,7 +28,9 @@ func _generate():
 	var gen = load("res://map/ProceduralGeneration.gd").new()
 	var result = gen.generate(seed_val, 300, 300, ts)
 	if result is Array:
-		if result.size() >= 1: add_child(result[0])  # terrain
+		if result.size() >= 1:
+			_tilemap_layer = result[0]  # terrain TileMapLayer
+			add_child(_tilemap_layer)
 		if result.size() >= 2: add_child(result[1])  # contours
 		if result.size() >= 3: add_child(result[2])  # heights
 		if result.size() >= 4: _elev_map = result[3]
@@ -112,6 +115,7 @@ func _generate():
 		# Biome data for water detection
 		unit.biome_data = _biome_map
 		unit.elev_data = _elev_map
+		unit._tilemap_layer = _tilemap_layer
 		
 		add_child(unit)
 		units.append(unit)

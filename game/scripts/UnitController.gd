@@ -52,7 +52,8 @@ var _move_target: Vector2 = Vector2.INF
 var _path_waypoints: Array = []
 var _path_index: int = 0
 var _nav: NavigationSystem = null
-var _direct_move: bool = false  # true when moving without A* path
+var _direct_move: bool = false
+var _tilemap_layer: TileMapLayer = null  # set by Llanura1.gd for water checks
 const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
@@ -264,19 +265,29 @@ func _get_elevation_offset(pos: Vector2) -> float:
 
 ## Check if a world position is on water (biome 0).
 func _is_water_at(pos: Vector2) -> bool:
-	if biome_data.is_empty():
-		return false
-	var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
-	var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
-	var cx = int(round(px)) - _cell_ox
-	var cy = int(round(py)) - _cell_oy
-	if cx >= 0 and cy >= 0 and cy < biome_data.size() and cx < biome_data[cy].size():
-		var val = biome_data[cy][cx]
-		var is_water = (val == 0)
-		# Safety: if value is float (raw noise), treat negative as water
-		if typeof(val) != TYPE_INT and val < 0.0:
-			is_water = true
-		return is_water
+	# Method 1: check via TileMapLayer (most reliable)
+	if _tilemap_layer != null:
+		var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
+		var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
+		var cx = int(round(px)) - _cell_ox
+		var cy = int(round(py)) - _cell_oy
+		var cell_pos = Vector2i(cx, cy)
+		var used = _tilemap_layer.get_used_rect()
+		if used.has_point(cell_pos):
+			var sid = _tilemap_layer.get_cell_source_id(cell_pos)
+			# Source IDs 5 (shallow water) and 6 (deep water)
+			if sid == 5 or sid == 6:
+				return true
+	
+	# Method 2: check via biome_data (fallback)
+	if not biome_data.is_empty():
+		var px = (pos.x / 64.0 + pos.y / 32.0) / 2.0
+		var py = (pos.y / 32.0 - pos.x / 64.0) / 2.0
+		var cx = int(round(px)) - _cell_ox
+		var cy = int(round(py)) - _cell_oy
+		if cx >= 0 and cy >= 0 and cy < biome_data.size() and cx < biome_data[cy].size():
+			return biome_data[cy][cx] == 0
+	
 	return false
 
 
