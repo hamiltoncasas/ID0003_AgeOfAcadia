@@ -12,7 +12,7 @@ func _ready():
 
 	var gen = load("res://map/ProceduralGeneration.gd").new()
 	# Generate at 240x240 with offset so the camera sees varied terrain
-	var layer = gen.generate(seed_val, 240, 240, tile_set)
+	var layer = gen.generate(seed_val, 160, 160, tile_set)
 	if layer:
 		add_child(layer)
 		print("Ready")
