@@ -26,7 +26,7 @@ const _JITTER_X: float = 8.0
 const _JITTER_Y: float = 4.0
 
 
-func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator, container: Node) -> Dictionary:
+func place_objects(water_map: Array, elev_map: Array, rng: RandomNumberGenerator, container: Node, biome_map: Array = []) -> Dictionary:
 	var textures: Dictionary = SpriteCache.get_entorno_textures()
 	if textures.is_empty():
 		push_warning("ObjectPlacer: get_entorno_textures() returned empty")
@@ -40,20 +40,21 @@ func place_objects(biome_map: Array, elev_map: Array, rng: RandomNumberGenerator
 	var placed: Dictionary = {}
 	var total_count: int = 0
 	var warnings: Array = []
-	var height: int = biome_map.size()
+	var height: int = water_map.size()
 	if height == 0:
-		return { "count": 0, "warnings": ["biome_map has no rows"] }
-	var width: int = biome_map[0].size()
+		return { "count": 0, "warnings": ["water_map has no rows"] }
+	var width: int = water_map[0].size()
 	if width == 0:
-		return { "count": 0, "warnings": ["biome_map has no columns"] }
+		return { "count": 0, "warnings": ["water_map has no columns"] }
 
 	for y in height:
 		for x in width:
-			var biome: int = biome_map[y][x] as int
-
-			# Water biome (0): no objects at all
-			if biome == 0:
+			# Skip water cells using explicit boolean water_map
+			if water_map[y][x]:
 				continue
+
+			# Get biome index from biome_map for pool/density selection
+			var biome: int = biome_map[y][x] as int if not biome_map.is_empty() else 2
 
 			if _is_cliff_cell(x, y, elev_map, width, height):
 				continue

@@ -45,12 +45,14 @@ func generate(seed, w, h, ts):
 	var ox = -100
 	var oy = -100
 
-	# ── Step 1: Generate height + moisture values ────────────
+	# ── Step 1: Generate height + moisture values + WATER MAP ────
 	var elev_map = []
 	var biome_map = []
+	var water_map = []  # explicit boolean: true = water, false = land
 	for y in range(h):
 		elev_map.append([])
 		biome_map.append([])
+		water_map.append([])
 		for x in range(w):
 			# Base height with valley bias (edges higher, center lower)
 			var dx_center = (x - w / 2.0) / (w / 2.0)
@@ -62,6 +64,7 @@ func generate(seed, w, h, ts):
 			var det = detail_noise.get_noise_2d(x, y) * 0.12
 			var hval = raw_h + det + valley_bias
 			biome_map[y].append(hval)
+			water_map[y].append(false)  # default: not water
 
 			# Elevation: 8 levels
 			var elev_lvl = int((hval + 0.5) * 4.0)
@@ -115,6 +118,7 @@ func generate(seed, w, h, ts):
 			else:
 				biome_idx = 2  # plain
 			biome_map[y][x] = biome_idx
+			water_map[y][x] = (sid == 5 or sid == 6)  # EXPLICIT water flag
 
 			var variant = (x * 7 + y * 13 + sid * 31) % 8
 			layer.set_cell(pos, sid, Vector2i(variant, 0))
@@ -189,7 +193,7 @@ func generate(seed, w, h, ts):
 			if biome_map[yy][xx] == 0:
 				dw += 1
 	print("Water sample: ", dw, " cells at 50px grid")
-	return [layer, contours, heights, elev_map, biome_map]
+	return [layer, contours, heights, elev_map, biome_map, water_map]
 
 
 func _make_contour_tex():

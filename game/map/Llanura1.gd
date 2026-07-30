@@ -8,6 +8,7 @@ const UnitController = preload("res://scripts/UnitController.gd")
 
 var _elev_map = []
 var _biome_map = []
+var _water_map = []
 var _tilemap_layer: TileMapLayer = null
 
 
@@ -35,6 +36,7 @@ func _generate():
 		if result.size() >= 3: add_child(result[2])  # heights
 		if result.size() >= 4: _elev_map = result[3]
 		if result.size() >= 5: _biome_map = result[4]
+		if result.size() >= 6: _water_map = result[5]
 	
 	# ── Environment Objects ────────────────────────────────────
 	var rng = RandomNumberGenerator.new()
@@ -45,7 +47,7 @@ func _generate():
 	object_container.y_sort_enabled = true
 	
 	var placer = ObjectPlacer.new()
-	placer.place_objects(_biome_map, _elev_map, rng, object_container)
+	placer.place_objects(_water_map, _elev_map, rng, object_container, _biome_map)
 	add_child(object_container)
 	
 	# ── Create 6 Archer Units ────────────────────────────────────
@@ -114,6 +116,7 @@ func _generate():
 		
 		# Biome data for water detection
 		unit.biome_data = _biome_map
+		unit._water_map = _water_map
 		unit.elev_data = _elev_map
 		unit._tilemap_layer = _tilemap_layer
 		
