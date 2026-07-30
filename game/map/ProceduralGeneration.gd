@@ -22,9 +22,9 @@ func generate(seed, w, h, ts):
 	var elev_noise = FastNoiseLite.new()
 	elev_noise.seed = abs(seed * 3 + 1)
 	elev_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	elev_noise.frequency = 0.03
+	elev_noise.frequency = 0.025
 	elev_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
-	elev_noise.fractal_octaves = 2
+	elev_noise.fractal_octaves = 3
 	elev_noise.fractal_gain = 0.5
 
 	var river_noise = FastNoiseLite.new()
@@ -49,13 +49,15 @@ func generate(seed, w, h, ts):
 			var hval = val + det
 			var elev = elev_noise.get_noise_2d(x, y)
 			biome_map[y].append(hval)
-			# Elevation: 0, 1, or 2
-			if elev < -0.3:
+			# Elevation: 0, 1, 2, or 3 (smooth hills)
+			if elev < -0.4:
 				elev_map[y].append(0)
-			elif elev < 0.3:
+			elif elev < 0.0:
 				elev_map[y].append(1)
-			else:
+			elif elev < 0.4:
 				elev_map[y].append(2)
+			else:
+				elev_map[y].append(3)
 
 	# Debug elevation counts
 	var e0 = 0; var e1 = 0; var e2 = 0
@@ -99,66 +101,56 @@ func generate(seed, w, h, ts):
 			layer.set_cell(pos, sid, Vector2i(0, 0))
 			count += 1
 
-	# Step 3: Create elevation edge markers
-	var edges = Node2D.new()
-	edges.name = "Edges"
-	var edge_count = 0
+	# Step 3: Create smooth height overlay (hills)
+	var heights = Node2D.new()
+	heights.name = "HeightOverlay"
+	var height_count = 0
 
-	# Edge texture: thin dark line ON TOP of terrain
-	var edge_tex = _make_edge_texture(128, 16, Color(0.8, 0.6, 0.3, 0.8))
-	var deep_edge_tex = _make_edge_texture(128, 24, Color(0.9, 0.4, 0.2, 0.9))
+	# Pre-create overlay textures for each level
+	var overlay_texs = []
+	var colors = [
+		Color(0.3, 0.4, 0.2, 0.15),  # level 0: dark green (low)
+		Color(0.5, 0.6, 0.3, 0.0),   # level 1: transparent (base)
+		Color(0.8, 0.7, 0.4, 0.1),   # level 2: warm gold
+		Color(0.9, 0.6, 0.2, 0.2),   # level 3: bright orange (high)
+	]
+	for c in colors:
+		overlay_texs.append(_make_smooth_overlay(128, 64, c))
 
 	for y in range(h):
 		for x in range(w):
 			var elev = elev_map[y][x]
+			# Skip level 1 (base ground, no overlay)
+			if elev == 1:
+				continue
+			var tex = overlay_texs[elev]
 			var world_pos = _cell_to_world(x + ox, y + oy)
+			var sprite = Sprite2D.new()
+			sprite.texture = tex
+			sprite.centered = true
+			sprite.position = world_pos
+			heights.add_child(sprite)
+			height_count += 1
 
-			# Check 4 neighbors for elevation changes
-			var checks = [
-				[x-1, y, -1, 0],  # West neighbor
-				[x+1, y, 1, 0],   # East neighbor  
-				[x, y-1, 0, -1],  # North neighbor
-				[x, y+1, 0, 1],   # South neighbor
-			]
-			for c in checks:
-				var nx = c[0]
-				var ny = c[1]
-				if nx < 0 or nx >= w or ny < 0 or ny >= h:
-					continue
-				var n_elev = elev_map[ny][nx]
-				if n_elev == elev:
-					continue
-
-				# Different elevation — place edge marker
-				var sprite = Sprite2D.new()
-				sprite.texture = deep_edge_tex if abs(elev - n_elev) > 1 else edge_tex
-				sprite.centered = true
-				sprite.z_index = -1  # Behind terrain tiles
-
-				# Position at boundary between cells
-				var offset_x = c[2] * 64  # Half tile offset
-				var offset_y = c[3] * 16
-				sprite.position = world_pos + Vector2(offset_x, offset_y)
-				edges.add_child(sprite)
-				edge_count += 1
-
-	print("Tiles: ", count, " river: ", river_cells.size(), " edges: ", edge_count)
+	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count)
 
 	# Return array: [edges_node, terrain_layer, elev_map]
-	return [layer, edges, elev_map]
+	return [layer, heights, elev_map]
 
 
-func _make_edge_texture(w, h, color):
+func _make_smooth_overlay(w, h, color):
+	## Creates a soft-gradient overlay that fades toward edges
+	## so adjacent cells blend smoothly into hills
 	var img = Image.create(w, h, false, Image.FORMAT_RGBA8)
 	for y in range(h):
-		var alpha = 0.0
-		if y >= h - 6:
-			alpha = color.a  # Bottom 6px fully opaque
-		elif y >= h - 10:
-			alpha = color.a * 0.5  # Fade
-		var c = Color(color.r, color.g, color.b, alpha)
 		for x in range(w):
-			img.set_pixel(x, y, c)
+			# Distance from center (0 at center, 1 at edge)
+			var dx = (x - w / 2.0) / (w / 2.0)
+			var dy = (y - h / 2.0) / (h / 2.0)
+			var dist = sqrt(dx * dx + dy * dy)
+			# Alpha: full at center, fade to 0 at edges
+			var alpha = max(0.0, 1.0 - dist * 1.5) * color.a
+			img.set_pixel(x, y, Color(color.r, color.g, color.b, alpha))
 	return ImageTexture.create_from_image(img)
 
 
