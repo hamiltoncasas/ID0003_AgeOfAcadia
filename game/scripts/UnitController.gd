@@ -52,6 +52,7 @@ var _move_target: Vector2 = Vector2.INF
 var _path_waypoints: Array = []
 var _path_index: int = 0
 var _nav: NavigationSystem = null
+var _direct_move: bool = false  # true when moving without A* path
 const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
@@ -149,6 +150,7 @@ func _move_to(target: Vector2) -> void:
 	
 	_path_waypoints = []
 	_path_index = 0
+	_direct_move = false
 	if _nav != null:
 		_path_waypoints = _nav.find_path(global_position, adjusted)
 	
@@ -157,11 +159,12 @@ func _move_to(target: Vector2) -> void:
 		_move_target = _path_waypoints[_path_index]
 	else:
 		_move_target = adjusted
+		_direct_move = true  # no A* path — check water during movement
 	
 	if _state in [State.IDLE, State.WALK]:
 		_state = State.WALK
 	_spawn_move_pointer(_move_target)
-	print(">>> Unit ", unit_index, " -> ", _move_target, " (", _path_waypoints.size(), " waypoints)")
+	print(">>> Unit ", unit_index, " -> ", _move_target, " direct=", _direct_move, " (", _path_waypoints.size(), " waypoints)")
 
 
 func _physics_process(delta: float) -> void:
@@ -176,10 +179,20 @@ func _physics_process(delta: float) -> void:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
+			# Water check for direct movement (no A* path)
+			if _direct_move and _is_water_at(global_position + dir * 16.0):
+				# Try to go around water with perpendicular direction
+				var perp = Vector2(-dir.y, dir.x)
+				if not _is_water_at(global_position + perp * 16.0):
+					dir = perp
+				elif not _is_water_at(global_position - perp * 16.0):
+					dir = -perp
+				# else: surrounded, just keep trying
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
 		else:
+			_direct_move = false
 			# Reached waypoint — advance to next
 			if _path_index < _path_waypoints.size() - 1:
 				_path_index += 1
