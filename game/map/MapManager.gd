@@ -55,7 +55,6 @@ func _ready():
 		for warn in place_result.warnings:
 			push_warning("MapManager: ", warn)
 
-	# Clear objects around spawn so player starts in open field
 	var spawn_cell := Vector2i(map_width / 2, map_height / 2)
 	var clear_radius := 4
 	for c in object_container.get_children():
@@ -64,23 +63,17 @@ func _ready():
 			if abs(obj_cell.x - spawn_cell.x) <= clear_radius and abs(obj_cell.y - spawn_cell.y) <= clear_radius:
 				c.queue_free()
 
-	# Player INSIDE ObjectContainer for proper isometric y-sort
-	# No z_index override — y_sort determines depth naturally
 	var player_scene := preload("res://map/units/PlayerUnit.tscn")
 	var player := player_scene.instantiate()
 	player.position = Vector2(0, 3840)
 	player.motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
 	object_container.add_child(player)
 
-
-
 	var camera := get_node_or_null("CameraController")
 	if camera:
 		camera.map_size = Vector2i(map_width, map_height)
 		camera.follow_target = player
 
-	# Minimap must be in a CanvasLayer so its Control node positions
-	# in screen space, not world space.
 	var minimap_scene = preload("res://map/Minimap.tscn")
 	var minimap = minimap_scene.instantiate()
 	minimap.map_manager = self
@@ -145,17 +138,20 @@ func _add_coord_overlay():
 	ui.name = "CoordOverlay"
 	
 	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.6)
-	bg.size = Vector2(1, 28)
+	bg.color = Color(0, 0, 0, 0.5)
+	bg.size = Vector2(1, 22)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	ui.add_child(bg)
 	
 	var label := Label.new()
 	label.name = "CoordLabel"
 	label.text = "Move mouse over the map"
-	label.add_theme_color_override("font_color", Color(1, 1, 1))
-	label.add_theme_font_size_override("font_size", 14)
-	label.position = Vector2(10, -22)
+	label.add_theme_color_override("font_color", Color(1, 0.95, 0.8, 0.9))
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_constant_override("shadow_offset_x", 1)
+	label.add_theme_constant_override("shadow_offset_y", 1)
+	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.5))
+	label.position = Vector2(8, -15)
 	bg.add_child(label)
 	
 	add_child(ui)
