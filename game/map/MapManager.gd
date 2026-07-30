@@ -139,38 +139,46 @@ func cell_to_world(cell: Vector2i) -> Vector2:
 
 
 func _add_coord_overlay():
-	## Add visible coordinate markers at 20-cell intervals on the map
-	for x in range(0, 120, 20):
-		for y in range(0, 120, 20):
-			var world := cell_to_world(Vector2i(x, y))
-			var sprite := Sprite2D.new()
-			# Create a simple colored square texture
-			var img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
-			var col := Color(1, 0.2, 0.2, 0.9) if x == 0 and y == 0 else Color(1, 1, 0.2, 0.7)
-			for px in 8:
-				for py in 8:
-					img.set_pixel(px, py, col)
-			var tex := ImageTexture.create_from_image(img)
-			sprite.texture = tex
-			sprite.position = world
-			sprite.centered = false
-			add_child(sprite)
-	
-	# Bottom info bar
+	## Add mouse coordinate display at bottom of screen
 	var ui := CanvasLayer.new()
 	ui.layer = 100
+	ui.name = "CoordOverlay"
+	
 	var bg := ColorRect.new()
-	bg.color = Color(0, 0, 0, 0.5)
-	bg.size = Vector2(1, 20)
+	bg.color = Color(0, 0, 0, 0.6)
+	bg.size = Vector2(1, 28)
 	bg.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
 	ui.add_child(bg)
-	var info := Label.new()
-	info.text = "Markers at every 20th cell"
-	info.add_theme_color_override("font_color", Color(1, 1, 1))
-	info.add_theme_font_size_override("font_size", 12)
-	info.position = Vector2(10, -16)
-	bg.add_child(info)
+	
+	var label := Label.new()
+	label.name = "CoordLabel"
+	label.text = "Move mouse over the map"
+	label.add_theme_color_override("font_color", Color(1, 1, 1))
+	label.add_theme_font_size_override("font_size", 14)
+	label.position = Vector2(10, -22)
+	bg.add_child(label)
+	
 	add_child(ui)
+	
+	# Store ref to label for _process updates
+	_coord_label = label
+
+
+var _coord_label: Label = null
+
+
+func _process(_delta):
+	if not _coord_label:
+		return
+	var mouse_pos := get_global_mouse_position()
+	var cell := world_to_cell(mouse_pos)
+	var biome_name := "?"
+	if biome_map.size() > 0 and cell.y >= 0 and cell.y < biome_map.size() and cell.x >= 0 and cell.x < biome_map[cell.y].size():
+		var b := biome_map[cell.y][cell.x] as int
+		var names := ["WATER", "SAND", "GRASS", "DIRT", "MOUNTAIN"]
+		if b >= 0 and b < names.size():
+			biome_name = names[b]
+	_coord_label.text = "Cell (%d,%d)  Biome: %s  World (%.0f,%.0f)" % [cell.x, cell.y, biome_name, mouse_pos.x, mouse_pos.y]
 
 
 func _build_tileset() -> TileSet:
