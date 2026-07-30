@@ -211,10 +211,11 @@ func _update_selection(end_pos: Vector2):
 		return
 	
 	# Box selection
+	var canvas_xform = get_viewport().get_canvas_transform()
 	_selected_units = []
 	for unit in _all_units:
 		if unit and is_instance_valid(unit):
-			var screen_pos = get_viewport().get_camera_2d().unproject_position(unit.global_position)
+			var screen_pos = canvas_xform * unit.global_position
 			if rect.has_point(screen_pos):
 				_selected_units.append(unit)
 	
@@ -225,11 +226,12 @@ func _update_selection(end_pos: Vector2):
 
 ## Select the nearest unit to a click position.
 func _select_single(click_pos: Vector2):
+	var canvas_xform = get_viewport().get_canvas_transform()
 	var nearest = null
 	var nearest_dist = 999999.0
 	for unit in _all_units:
 		if unit and is_instance_valid(unit):
-			var screen_pos = get_viewport().get_camera_2d().unproject_position(unit.global_position)
+			var screen_pos = canvas_xform * unit.global_position
 			var dist = screen_pos.distance_to(click_pos)
 			if dist < 48.0 and dist < nearest_dist:
 				nearest = unit
@@ -257,8 +259,9 @@ func _move_selected_units():
 		return
 	
 	var mouse_world = Vector2.ZERO
-	if get_viewport().get_camera_2d():
-		mouse_world = get_viewport().get_camera_2d().get_global_mouse_position()
+	var cam = get_viewport().get_camera_2d()
+	if cam:
+		mouse_world = cam.get_global_mouse_position()
 	else:
 		return
 	
