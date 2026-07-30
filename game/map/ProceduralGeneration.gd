@@ -132,10 +132,40 @@ func generate(seed, w, h, ts):
 			heights.add_child(sprite)
 			height_count += 1
 
-	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count)
+	# Step 4: Contour lines ON TOP of everything
+	var contours = Node2D.new()
+	contours.name = "Contours"
+	var contour_count = 0
+	var ct = _make_contour_tex()
 
-	# Return array: [edges_node, terrain_layer, elev_map]
-	return [layer, heights, elev_map]
+	for y in range(h):
+		for x in range(w):
+			var elev = elev_map[y][x]
+			var world_pos = _cell_to_world(x + ox, y + oy)
+			for c in [[x-1, y], [x+1, y], [x, y-1], [x, y+1]]:
+				var nx = c[0]; var ny = c[1]
+				if nx < 0 or nx >= w or ny < 0 or ny >= h:
+					continue
+				if elev_map[ny][nx] != elev:
+					var sp = Sprite2D.new()
+					sp.texture = ct
+					sp.centered = true
+					sp.position = world_pos + Vector2((nx-x) * 64, (ny-y) * 16)
+					contours.add_child(sp)
+					contour_count += 1
+
+	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count, " contours: ", contour_count)
+	return [layer, contours, heights, elev_map]
+
+
+func _make_contour_tex():
+	# Thin bright line visible on top of everything
+	var img = Image.create(128, 8, false, Image.FORMAT_RGBA8)
+	for y in range(8):
+		var a = 0.6 if y >= 2 and y <= 5 else 0.0
+		for x in range(128):
+			img.set_pixel(x, y, Color(0.9, 0.7, 0.3, a))
+	return ImageTexture.create_from_image(img)
 
 
 func _make_smooth_overlay(w, h, color):

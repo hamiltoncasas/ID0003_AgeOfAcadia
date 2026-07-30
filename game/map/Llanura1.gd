@@ -15,11 +15,12 @@ func _ready():
 	print("Seed: ", seed_val)
 
 	var gen = load("res://map/ProceduralGeneration.gd").new()
-	var result = gen.generate(seed_val, 500, 500, ts)
+	var result = gen.generate(seed_val, 300, 300, ts)
 	if result is Array:
 		if result.size() >= 1: add_child(result[0])  # terrain
-		if result.size() >= 2: add_child(result[1])  # edges
-		if result.size() >= 3: _elev_map = result[2]
+		if result.size() >= 2: add_child(result[1])  # contours (on top)
+		if result.size() >= 3: add_child(result[2])  # heights (behind)
+		if result.size() >= 4: _elev_map = result[3]
 
 	_add_mouse_overlay()
 	print("Ready")

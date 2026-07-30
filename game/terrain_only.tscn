@@ -5,8 +5,8 @@
 [node name="Root" type="Node2D"]
 
 [node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(0, 9600)
-zoom = Vector2(0.12, 0.12)
+position = Vector2(0, 3200)
+zoom = Vector2(0.06, 0.06)
 
 [node name="Terrain" type="Node2D" parent="."]
 script = ExtResource("1")
