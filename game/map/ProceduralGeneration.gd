@@ -94,9 +94,9 @@ func generate(seed, w, h, ts):
 	edges.name = "Edges"
 	var edge_count = 0
 
-	# Edge texture: semi-transparent brown strip
-	var edge_tex = _make_edge_texture(128, 32, Color(0.4, 0.25, 0.15, 0.7))
-	var deep_edge_tex = _make_edge_texture(128, 48, Color(0.3, 0.15, 0.08, 0.8))
+	# Edge texture: thin dark line ON TOP of terrain
+	var edge_tex = _make_edge_texture(128, 8, Color(0.2, 0.15, 0.1, 0.5))
+	var deep_edge_tex = _make_edge_texture(128, 12, Color(0.15, 0.1, 0.05, 0.6))
 
 	for y in range(h):
 		for x in range(w):
@@ -135,7 +135,7 @@ func generate(seed, w, h, ts):
 	print("Tiles: ", count, " river: ", river_cells.size(), " edges: ", edge_count)
 
 	# Return array: [edges_node, terrain_layer, elev_map]
-	return [edges, layer, elev_map]
+	return [layer, edges, elev_map]
 
 
 func _make_edge_texture(w, h, color):
@@ -144,12 +144,12 @@ func _make_edge_texture(w, h, color):
 		var alpha = color.a
 		if y < 2:
 			alpha = 0.0
-		elif y < 6:
-			alpha = color.a * 0.5
-		# else: full alpha
+		# From pixel 2 to h, fully opaque (thin visible line)
 		var c = Color(color.r, color.g, color.b, alpha)
 		for x in range(w):
-			img.set_pixel(x, y, c)
+			# Only color the center portion, edges transparent
+			if x > 16 and x < w - 16:
+				img.set_pixel(x, y, c)
 	return ImageTexture.create_from_image(img)
 
 
