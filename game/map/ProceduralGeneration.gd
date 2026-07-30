@@ -49,37 +49,30 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
 
-	for elev in 3:
-		var layer := TileMapLayer.new()
-		layer.name = "Elevation" + str(elev)
-		layer.position = Vector2(0, -elev * 32)
-		layer.y_sort_enabled = true
-		if tile_set:
-			layer.tile_set = tile_set
+	# Single terrain layer — elevation layers had offset rendering issues
+	var layer := TileMapLayer.new()
+	layer.name = "Terrain"
+	layer.y_sort_enabled = true
+	if tile_set:
+		layer.tile_set = tile_set
 
-		var layer_count := 0
-		for y in height:
-			for x in width:
-				if elev_map[y][x] != elev:
-					continue
-				var biome: int = biome_map[y][x]
-				var source_id: int = BIOME_SOURCE.get(biome, 0)
-				var variant := rng.randi() % 8
-				layer.set_cell(Vector2i(x, y), source_id, Vector2i(variant, 0))
-				tile_count += 1
-				layer_count += 1
+	for y in height:
+		for x in width:
+			var biome: int = biome_map[y][x]
+			var source_id: int = BIOME_SOURCE.get(biome, 0)
+			var variant := rng.randi() % 8
+			layer.set_cell(Vector2i(x, y), source_id, Vector2i(variant, 0))
+			tile_count += 1
 
-		print("Elevation ", elev, ": ", layer_count, " tiles")
-		layers.append(layer)
-
-	var cliff_node := _create_cliffs(biome_map, elev_map, width, height)
+	print("Terrain: ", tile_count, " tiles placed")
+	layers.append(layer)
 
 	return {
 		"success": true,
 		"biome_map": biome_map,
 		"elev_map": elev_map,
 		"layers": layers,
-		"cliff_node": cliff_node,
+		"cliff_node": null,
 		"tile_count": tile_count,
 	}
 
