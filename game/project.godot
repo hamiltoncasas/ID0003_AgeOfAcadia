@@ -16,7 +16,7 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="Age of Acadia"
 config/description="A pixel art strategy game set in colonial Acadia"
-run/main_scene="res://terrain_only.tscn"
+run/main_scene="res://Menu.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 
 [autoload]
