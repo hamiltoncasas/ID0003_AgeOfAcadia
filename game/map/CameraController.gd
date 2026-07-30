@@ -19,6 +19,8 @@ var _cam_start: Vector2 = Vector2.ZERO
 func _ready():
 	# Manual follow smoothing via _process, not built-in
 	position_smoothing_enabled = false
+	# Start zoomed out to show most of the 120x120 map
+	zoom = Vector2(0.25, 0.25)
 
 
 func _unhandled_input(event: InputEvent):
