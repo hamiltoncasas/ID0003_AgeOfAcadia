@@ -134,8 +134,8 @@ func generate(seed, w, h, ts):
 
 	print("Tiles: ", count, " river: ", river_cells.size(), " edges: ", edge_count)
 
-	# Return array of nodes: [edges_node, terrain_layer]
-	return [edges, layer]
+	# Return array: [edges_node, terrain_layer, elev_map]
+	return [edges, layer, elev_map]
 
 
 func _make_edge_texture(w, h, color):
