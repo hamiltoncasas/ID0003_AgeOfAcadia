@@ -94,6 +94,9 @@ func _ready():
 	ui_layer.add_child(minimap)
 	add_child(ui_layer)
 
+	# Coordinate overlay at bottom of screen
+	_add_coord_overlay()
+
 	var selector := _CellSelector.new()
 	selector.name = "CellSelector"
 	selector.map_manager = self
@@ -133,6 +136,41 @@ func world_to_cell(pos: Vector2) -> Vector2i:
 
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x - cell.y) * 64, (cell.x + cell.y) * 32)
+
+
+func _add_coord_overlay():
+	## Add visible coordinate markers at 20-cell intervals on the map
+	for x in range(0, 120, 20):
+		for y in range(0, 120, 20):
+			var world := cell_to_world(Vector2i(x, y))
+			var sprite := Sprite2D.new()
+			# Create a simple colored square texture
+			var img := Image.create(8, 8, false, Image.FORMAT_RGBA8)
+			var col := Color(1, 0.2, 0.2, 0.9) if x == 0 and y == 0 else Color(1, 1, 0.2, 0.7)
+			for px in 8:
+				for py in 8:
+					img.set_pixel(px, py, col)
+			var tex := ImageTexture.create_from_image(img)
+			sprite.texture = tex
+			sprite.position = world
+			sprite.centered = false
+			add_child(sprite)
+	
+	# Bottom info bar
+	var ui := CanvasLayer.new()
+	ui.layer = 100
+	var bg := ColorRect.new()
+	bg.color = Color(0, 0, 0, 0.5)
+	bg.size = Vector2(1, 20)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
+	ui.add_child(bg)
+	var info := Label.new()
+	info.text = "Markers at every 20th cell"
+	info.add_theme_color_override("font_color", Color(1, 1, 1))
+	info.add_theme_font_size_override("font_size", 12)
+	info.position = Vector2(10, -16)
+	bg.add_child(info)
+	add_child(ui)
 
 
 func _build_tileset() -> TileSet:
