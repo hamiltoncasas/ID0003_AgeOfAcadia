@@ -13,9 +13,8 @@ enum Biome {
 	MOUNTAIN = 4,
 }
 
-# New terrain atlas: source 0, all tiles at 128×64 isometric
-# Atlas: 32 cols × 7 rows of (128×64) tiles in terrain_atlas.png
-const SOURCE_ID: int = 0
+# Terrain atlas source ID — set at runtime by MapManager
+var _source_id: int = 0
 
 # Terrain type mapping (old → new)
 const BIOME_TO_TERRAIN: Dictionary = {
@@ -46,7 +45,7 @@ const TERRAIN_CENTERS: Dictionary = {
 }
 
 
-func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) -> Dictionary:
+func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null, source_id: int = 0) -> Dictionary:
 	if width <= 0 or height <= 0:
 		return { "success": false, "error": "Invalid dimensions" }
 
@@ -78,6 +77,7 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var layers: Array = []
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
+	_source_id = source_id
 
 	# Cap elevation at 2 so all cells fall into 3 layers (0, 1, 2)
 	for y in height:
@@ -102,7 +102,7 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 
 				# Check neighbors for transitions
 				var atlas_coords := _select_tile_atlas(x, y, biome_map, width, height, terrain_name, variants, rng)
-				layer.set_cell(Vector2i(x, y), SOURCE_ID, atlas_coords)
+				layer.set_cell(Vector2i(x, y), _source_id, atlas_coords)
 				tile_count += 1
 
 		layers.append(layer)

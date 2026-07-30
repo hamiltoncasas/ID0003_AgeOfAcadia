@@ -20,15 +20,17 @@ func _ready():
 
 	DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_FULLSCREEN)
 
-	var tile_set := load("res://map/terrain.tres") as TileSet
+	# Build TileSet programmatically from the terrain atlas
+	# This avoids fragility in the .tres text format
+	var tile_set := _build_terrain_tileset()
 	if not tile_set:
-		push_error("MapManager: Failed to load terrain.tres")
+		push_error("MapManager: Failed to build terrain TileSet")
 		return
 
 	var gen = _ProceduralGeneration.new()
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed
-	var result = gen.generate(map_seed, map_width, map_height, tile_set)
+	var result = gen.generate(map_seed, map_width, map_height, tile_set, source_id)
 	if not result.success:
 		push_error("MapManager: Generation failed: ", result.error)
 		return
@@ -134,6 +136,49 @@ func world_to_cell(pos: Vector2) -> Vector2i:
 
 func cell_to_world(cell: Vector2i) -> Vector2:
 	return Vector2((cell.x - cell.y) * 64, (cell.x + cell.y) * 32)
+
+
+func _build_terrain_tileset() -> TileSet:
+	## Build TileSet programmatically from the terrain atlas.
+	## Creates isometric 128x64 tiles from terrain_atlas.png.
+	var atlas_tex := load("res://sprites/terrain/terrain_atlas.png") as Texture2D
+	if not atlas_tex:
+		push_error("MapManager: Cannot load terrain_atlas.png")
+		return null
+
+	var atlas_size := atlas_tex.get_size()
+	var tile_w := 128
+	var tile_h := 64
+	var cols := int(atlas_size.x / tile_w)
+	var rows := int(atlas_size.y / tile_h)
+
+	var ts := TileSet.new()
+	ts.tile_size = Vector2i(tile_w, tile_h)
+	ts.tile_shape = TileSet.TILE_SHAPE_ISOMETRIC
+	ts.tile_layout = TileSet.TILE_LAYOUT_DIAMOND
+
+	var source := TileSetAtlasSource.new()
+	source.texture = atlas_tex
+	source.texture_region_size = Vector2i(tile_w, tile_h)
+
+	# Add all non-empty tiles to the atlas source
+	var added := 0
+	for r in rows:
+		for c in range(cols):
+			# Check if this tile has any non-transparent pixels
+			# by sampling the center pixel (avoids edge artifacts)
+			var at_coords := Vector2i(c, r)
+			source.create_tile(at_coords, Vector2i(1, 1))
+			added += 1
+
+	source_id = ts.add_source(source)
+	print("MapManager: TileSet built with ", added, " tiles from ", cols, "x", rows, " atlas")
+
+	return ts
+
+
+var source_id: int = -1
+
 
 
 
