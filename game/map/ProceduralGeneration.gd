@@ -51,22 +51,26 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
 
-	# Single terrain layer — elevation layers had offset rendering issues
-	var layer := TileMapLayer.new()
-	layer.name = "Terrain"
-	if tile_set:
-		layer.tile_set = tile_set
+	# 3 elevation layers — y_sort removed from parent, so offsets work now
+	for elev in 3:
+		var layer := TileMapLayer.new()
+		layer.name = "Elevation" + str(elev)
+		layer.position = Vector2(0, -elev * 32)
+		if tile_set:
+			layer.tile_set = tile_set
 
-	for y in height:
-		for x in width:
-			var biome: int = biome_map[y][x]
-			var source_id: int = BIOME_SOURCE.get(biome, 0)
-			# Use (0,0) atlas coord like the ORIGINAL working code
-			layer.set_cell(Vector2i(x, y), source_id, Vector2i(0, 0))
-			tile_count += 1
+		var layer_count := 0
+		for y in height:
+			for x in width:
+				if elev_map[y][x] != elev:
+					continue
+				# All biomes use source 0 (grass)
+				layer.set_cell(Vector2i(x, y), 0, Vector2i(0, 0))
+				tile_count += 1
+				layer_count += 1
 
-	print("Terrain: ", tile_count, " tiles placed")
-	layers.append(layer)
+		print("Elevation ", elev, ": ", layer_count, " tiles")
+		layers.append(layer)
 
 	return {
 		"success": true,
