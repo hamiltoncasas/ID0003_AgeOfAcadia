@@ -54,7 +54,8 @@ var _path_index: int = 0
 var _nav: NavigationSystem = null
 var _direct_move: bool = false
 var _tilemap_layer: TileMapLayer = null  # set by Llanura1.gd for water checks
-var _water_map: Array = []  # explicit boolean water map
+	var _water_map: Array = []  # explicit boolean water map
+	var _water_map_checked: bool = false  # debug: first-time check
 const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
@@ -134,6 +135,20 @@ func _unhandled_input(event: InputEvent) -> void:
 
 ## Right-click handler: A* pathfinding with water avoidance.
 func _move_to(target: Vector2) -> void:
+	# Debug: one-time water_map check
+	if not _water_map_checked:
+		_water_map_checked = true
+		var wc = 0
+		if not _water_map.is_empty():
+			for yy in range(0, 300, 10):
+				for xx in range(0, 300, 10):
+					if yy < _water_map.size() and xx < _water_map[yy].size():
+						if _water_map[yy][xx]:
+							wc += 1
+			print("WATER MAP unit ", unit_index, ": size=", _water_map.size(), "x", _water_map[0].size(), " sample water=", wc, "/900")
+		else:
+			print("WATER MAP unit ", unit_index, ": EMPTY!")
+	
 	# Build nav system once
 	if _nav == null and not biome_data.is_empty():
 		_nav = NavigationSystem.new()
@@ -181,17 +196,17 @@ func _physics_process(delta: float) -> void:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
-			# ALWAYS check water ahead — regardless of direct_move or path
-			var next_pos = global_position + dir * 16.0
-			if _is_water_at(next_pos):
-				# Try perpendicular
-				var perp = Vector2(-dir.y, dir.x)
-				if not _is_water_at(global_position + perp * 16.0):
-					dir = perp
-				elif not _is_water_at(global_position - perp * 16.0):
-					dir = -perp
-				else:
-					dir = Vector2.ZERO  # stuck, don't move this frame
+			# Water check — only for direct movement (A* path already avoids water)
+			if _direct_move:
+				var next_pos = global_position + dir * 8.0
+				if _is_water_at(next_pos):
+					var perp = Vector2(-dir.y, dir.x)
+					if not _is_water_at(global_position + perp * 8.0):
+						dir = perp
+					elif not _is_water_at(global_position - perp * 8.0):
+						dir = -perp
+					else:
+						dir = Vector2.ZERO
 			velocity = dir * speed if dir != Vector2.ZERO else Vector2.ZERO
 			_state = State.WALK
 			_update_animation(dir)
