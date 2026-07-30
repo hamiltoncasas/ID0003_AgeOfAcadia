@@ -72,12 +72,15 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 		print("Elevation ", elev, ": ", layer_count, " tiles")
 		layers.append(layer)
 
+	# Restore cliffs at elevation boundaries — removed earlier as suspected cause
+	var cliff_node := _create_cliffs(biome_map, elev_map, width, height)
+
 	return {
 		"success": true,
 		"biome_map": biome_map,
 		"elev_map": elev_map,
 		"layers": layers,
-		"cliff_node": null,
+		"cliff_node": cliff_node,
 		"tile_count": tile_count,
 	}
 
