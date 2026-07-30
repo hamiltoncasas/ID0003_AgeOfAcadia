@@ -21,6 +21,10 @@ func _ready():
 		if result.size() >= 2: add_child(result[1])  # contours (on top)
 		if result.size() >= 3: add_child(result[2])  # heights (behind)
 		if result.size() >= 4: _elev_map = result[3]
+	
+	# UI overlay (borders + minimap)
+	var ui = load("res://map/GameUI.gd").new()
+	add_child(ui)
 
 	_add_mouse_overlay()
 	print("Ready")
