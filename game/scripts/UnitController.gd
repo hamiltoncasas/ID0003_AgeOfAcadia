@@ -58,11 +58,11 @@ var _nav: NavigationSystem = null
 ## Anti-stuck system
 var _stuck_count: int = 0
 var _last_pos: Vector2 = Vector2.ZERO
-var _last_target_dist: float = 0.0
+var _last_move_dist: float = 0.0
 var _stuck_recoveries: int = 0
-const STUCK_MIN_MOVEMENT: float = 1.5
-const STUCK_FRAME_LIMIT: int = 10
-const MAX_STUCK_RECOVERIES: int = 3
+const STUCK_MIN_MOVEMENT: float = 2.0
+const STUCK_FRAME_LIMIT: int = 30
+const MAX_STUCK_RECOVERIES: int = 5
 
 ## Health system
 var health: int = 100
@@ -175,7 +175,7 @@ func _move_to(target: Vector2) -> void:
 	_state = State.WALK
 	_stuck_recoveries = 0
 	_stuck_count = 0
-	_last_target_dist = 0.0
+	_last_move_dist = 0.0
 	_last_pos = global_position
 	_spawn_move_pointer(_move_target)
 	print(">>> MOVE_TO: target=", target, " first_waypoint=", _move_target)
@@ -234,20 +234,17 @@ func _physics_process(delta: float) -> void:
 
 	move_and_slide()
 	
-	# Anti-stuck: track progress toward target
+	# Anti-stuck: check if unit is actually moving
 	if _move_target != Vector2.INF:
-		var current_dist = global_position.distance_squared_to(_move_target)
-		# Not making progress (distance not decreasing) for too long = stuck
-		if current_dist >= _last_target_dist - 4.0:
+		var moved = global_position.distance_squared_to(_last_pos)
+		if moved < STUCK_MIN_MOVEMENT * STUCK_MIN_MOVEMENT:
 			_stuck_count += 1
 		else:
-			_stuck_count = 0
-		_last_target_dist = current_dist
+			_stuck_count = maxi(0, _stuck_count - 2)  # gradual recovery
+		_last_pos = global_position
 		
 		if _stuck_count > STUCK_FRAME_LIMIT:
 			_handle_stuck()
-	
-	_last_pos = global_position
 	
 	# NOTE: elevation y-offset removed — was fighting move_and_slide()
 	# causing vertical movement to be cancelled out. Visual overlays
@@ -589,26 +586,26 @@ func _advance_waypoint_or_stop() -> void:
 ## Reset stuck counter.
 func _reset_stuck() -> void:
 	_stuck_count = 0
-	_last_target_dist = 0.0
+	_last_move_dist = 0.0
 
-## Handle stuck — skip current waypoint, try next one.
+## Handle stuck — just skip to next waypoint.
 func _handle_stuck() -> void:
 	_stuck_recoveries += 1
-	print("STUCK: ", _stuck_recoveries, " at ", global_position)
+	if _stuck_recoveries % 3 == 1:
+		print("STUCK: skip waypoint (", _stuck_recoveries, ")")
 	
-	# Skip current waypoint, advance to next
+	# Skip current waypoint
 	if _path_index < _path_waypoints.size() - 1:
 		_path_index += 1
 		_move_target = _path_waypoints[_path_index]
 	else:
-		# No more waypoints — stop trying
 		velocity = Vector2.ZERO
 		_state = State.IDLE
 		_update_animation(_last_direction)
 		_move_target = Vector2.INF
 		_path_waypoints = []
 	
-	_stuck_count = 0
+	_stuck_count = maxi(0, _stuck_count - 15)  # back off, don't chain-stuck
 
 
 ## Stop current movement immediately.
