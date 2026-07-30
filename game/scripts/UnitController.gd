@@ -112,7 +112,7 @@ func set_unit_sprites(sprites: Resource) -> void:
 	_rebuild_sprite_frames()
 
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.pressed:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
@@ -123,6 +123,7 @@ func _input(event: InputEvent) -> void:
 					else:
 						_set_selected(false)
 			MOUSE_BUTTON_RIGHT:
+				print(">>> RIGHT CLICK on UnitController at frame ", Engine.get_process_frames())
 				if not _is_dead:
 					if not _selected:
 						_set_selected(true)
@@ -131,40 +132,7 @@ func _input(event: InputEvent) -> void:
 				_zoom(ZOOM_STEP)
 			MOUSE_BUTTON_WHEEL_DOWN:
 				_zoom(-ZOOM_STEP)
-
-
-## Right-click handler: find A* path and start following it.
-func _move_to(target: Vector2) -> void:
-	_build_nav_if_needed()
-	_path = []
-	_path_index = 0
-
-	if _nav:
-		_path = _nav.find_path(global_position, target)
-
-	if _path.size() >= 2:
-		_path_index = 1  # skip first (current position)
-		_move_target = _path[_path_index]
-	else:
-		# No path found — move directly (may get stuck on obstacles)
-		_move_target = target
-
-	_state = State.WALK
-	_spawn_move_pointer(_move_target)
-	print("Path: ", _path.size(), " waypoints, target=", _move_target)
-
-
-## Build navigation graph from biome data (lazy, once).
-func _build_nav_if_needed() -> void:
-	if _nav != null:
-		return
-	if biome_data.is_empty():
-		return
-	_nav = NavigationSystem.new()
-	_nav.build(biome_data)
-	print("Nav system built: ", biome_data.size(), " rows")
-
-func _unhandled_input(event: InputEvent) -> void:
+	
 	if event.is_action_pressed("test_attack"):
 		attack()
 	elif event.is_action_pressed("test_hurt"):
@@ -177,12 +145,37 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom(ZOOM_STEP)
 	elif event.is_action_pressed("zoom_out"):
 		_zoom(-ZOOM_STEP)
-	elif event is InputEventMouseButton and event.pressed:
-		match event.button_index:
-			MOUSE_BUTTON_RIGHT:
-				# Fallback: also catch right-click in unhandled
-				if not _is_dead:
-					_move_to(get_global_mouse_position())
+
+
+## Right-click handler: find A* path and start following it.
+func _move_to(target: Vector2) -> void:
+	_build_nav_if_needed()
+	_path = []
+	_path_index = 0
+
+	if _nav:
+		_path = _nav.find_path(global_position, target)
+
+	if _path.size() >= 2:
+		_path_index = 1
+		_move_target = _path[_path_index]
+	else:
+		_move_target = target
+
+	_state = State.WALK
+	_spawn_move_pointer(_move_target)
+	print("--> MOVE_TO: target=", target, " move_target=", _move_target, " path=", _path.size())
+
+
+## Build navigation graph from biome data (lazy, once).
+func _build_nav_if_needed() -> void:
+	if _nav != null:
+		return
+	if biome_data.is_empty():
+		return
+	_nav = NavigationSystem.new()
+	_nav.build(biome_data)
+	print("Nav system built: ", biome_data.size(), " rows")
 
 
 func _physics_process(delta: float) -> void:
@@ -196,6 +189,8 @@ func _physics_process(delta: float) -> void:
 	if _move_target != Vector2.INF and _state in [State.IDLE, State.WALK]:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
+			if Engine.get_process_frames() % 10 == 0:
+				print("  PHYSICS: moving dist=", dist, " target=", _move_target, " pos=", global_position)
 			var dir := (_move_target - global_position).normalized()
 			# Check water ahead
 			var look_ahead = global_position + dir * 8.0

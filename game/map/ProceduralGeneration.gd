@@ -15,7 +15,7 @@ func generate(seed, w, h, ts):
 	var height_noise = FastNoiseLite.new()
 	height_noise.seed = abs(seed * 7)
 	height_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	height_noise.frequency = 0.015
+	height_noise.frequency = 0.025
 	height_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	height_noise.fractal_octaves = 3
 	height_noise.fractal_gain = 0.5
@@ -23,7 +23,7 @@ func generate(seed, w, h, ts):
 	var detail_noise = FastNoiseLite.new()
 	detail_noise.seed = abs(seed * 13 + 7)
 	detail_noise.noise_type = FastNoiseLite.TYPE_PERLIN
-	detail_noise.frequency = 0.04
+	detail_noise.frequency = 0.06
 	detail_noise.fractal_type = FastNoiseLite.FRACTAL_FBM
 	detail_noise.fractal_octaves = 2
 	detail_noise.fractal_gain = 0.4
