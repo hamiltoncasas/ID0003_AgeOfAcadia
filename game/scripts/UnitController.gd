@@ -54,8 +54,8 @@ var _path_index: int = 0
 var _nav: NavigationSystem = null
 var _direct_move: bool = false
 var _tilemap_layer: TileMapLayer = null  # set by Llanura1.gd for water checks
-	var _water_map: Array = []  # explicit boolean water map
-	var _water_map_checked: bool = false  # debug: first-time check
+var _water_map: Array = []  # explicit boolean water map
+var _water_map_checked: bool = false  # debug: first-time check
 const MOVE_ARRIVAL_DIST: float = 24.0
 
 ## Health system
