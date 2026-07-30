@@ -154,12 +154,22 @@ func _move_to(target: Vector2) -> void:
 		print("Path: ", _path_waypoints.size(), " waypoints")
 	
 	if _path_waypoints.size() >= 2:
-		_path_index = 1  # skip current position
+		_path_index = 1
 		_move_target = _path_waypoints[_path_index]
-	else:
-		# Fallback: direct movement (may cross water)
+	elif not _is_water_at(target):
+		# Direct movement to walkable target
 		_move_target = target
 		_path_waypoints = []
+	else:
+		# Target is in water — find nearest walkable cell
+		var nearest = _find_nearest_land(target)
+		if nearest != Vector2.INF:
+			_move_target = nearest
+			_path_waypoints = []
+		else:
+			print("NO LAND TARGET FOUND")
+			_move_target = target
+			_path_waypoints = []
 	
 	_state = State.WALK
 	_stuck_recoveries = 0
@@ -176,27 +186,32 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# RTS movement with A* pathfinding + anti-stuck
+	# RTS movement with A* pathfinding + anti-stuck + water avoidance
 	if _move_target != Vector2.INF:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
 			var dir := (_move_target - global_position).normalized()
+			# Water check: don't walk into water
+			if _is_water_at(global_position + dir * 12.0):
+				# Try to slide along water edge with perpendicular direction
+				var perp = Vector2(-dir.y, dir.x)
+				if not _is_water_at(global_position + perp * 12.0):
+					dir = perp
+				elif not _is_water_at(global_position - perp * 12.0):
+					dir = -perp
+				else:
+					# Surrounded by water on both sides — just stop
+					velocity = Vector2.ZERO
+					move_and_slide()
+					# Skip ahead on path
+					_advance_waypoint_or_stop()
+					continue
 			velocity = dir * speed
 			_state = State.WALK
 			_update_animation(dir)
 		else:
-			# Reached current waypoint — advance or stop
 			_reset_stuck()
-			if _path_index < _path_waypoints.size() - 1:
-				_path_index += 1
-				_move_target = _path_waypoints[_path_index]
-			else:
-				# Final destination reached
-				velocity = Vector2.ZERO
-				_state = State.IDLE
-				_update_animation(_last_direction)
-				_move_target = Vector2.INF
-				_path_waypoints = []
+			_advance_waypoint_or_stop()
 	else:
 		_reset_stuck()
 		if _state == State.WALK:
@@ -232,6 +247,27 @@ func _physics_process(delta: float) -> void:
 	# NOTE: elevation y-offset removed — was fighting move_and_slide()
 	# causing vertical movement to be cancelled out. Visual overlays
 	# still show elevation on the terrain tiles.
+
+
+## Find nearest non-water cell by searching outward in expanding squares.
+func _find_nearest_land(world: Vector2) -> Vector2:
+	if biome_data.is_empty():
+		return world
+	var px = (world.x / 64.0 + world.y / 32.0) / 2.0
+	var py = (world.y / 32.0 - world.x / 64.0) / 2.0
+	var cx = int(round(px)) - _cell_ox
+	var cy = int(round(py)) - _cell_oy
+	for r in range(1, 25):
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				var nx = cx + dx
+				var ny = cy + dy
+				if nx >= 0 and ny >= 0 and ny < biome_data.size() and nx < biome_data[ny].size():
+					if biome_data[ny][nx] != 0:
+						var tile_x = nx + _cell_ox
+						var tile_y = ny + _cell_oy
+						return Vector2((tile_x - tile_y) * 64, (tile_x + tile_y) * 32)
+	return world
 
 
 ## Get elevation offset at a world position (in pixels).
@@ -530,6 +566,19 @@ func get_health() -> int:
 
 func get_max_health() -> int:
 	return max_health
+
+
+## Advance to next waypoint or stop at final destination.
+func _advance_waypoint_or_stop() -> void:
+	if _path_index < _path_waypoints.size() - 1:
+		_path_index += 1
+		_move_target = _path_waypoints[_path_index]
+	else:
+		velocity = Vector2.ZERO
+		_state = State.IDLE
+		_update_animation(_last_direction)
+		_move_target = Vector2.INF
+		_path_waypoints = []
 
 
 ## Reset stuck counter.
