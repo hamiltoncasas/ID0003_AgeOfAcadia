@@ -59,8 +59,8 @@ func generate(seed_val: int, width: int, height: int, tile_set: TileSet = null) 
 		for x in width:
 			var biome: int = biome_map[y][x]
 			var source_id: int = BIOME_SOURCE.get(biome, 0)
-			var variant := rng.randi() % 8
-			layer.set_cell(Vector2i(x, y), source_id, Vector2i(variant, 0))
+			# Use (0,0) atlas coord like the ORIGINAL working code
+			layer.set_cell(Vector2i(x, y), source_id, Vector2i(0, 0))
 			tile_count += 1
 
 	print("Terrain: ", tile_count, " tiles placed")
