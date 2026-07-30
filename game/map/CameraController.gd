@@ -26,7 +26,7 @@ func _ready():
 func _unhandled_input(event: InputEvent):
 	if event is InputEventMouseButton:
 		match event.button_index:
-			MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE:
+			MOUSE_BUTTON_MIDDLE:
 				if event.pressed:
 					_dragging = true
 					_drag_start = event.position

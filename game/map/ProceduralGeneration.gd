@@ -137,8 +137,8 @@ func generate(seed, w, h, ts):
 		)
 		overlay_texs.append(_make_smooth_overlay(128, 64, c))
 
-	for y in range(h):
-		for x in range(w):
+	for y in range(0, h, 2):
+		for x in range(0, w, 2):
 			var elev = elev_map[y][x]
 			var tex = overlay_texs[elev]
 			var world_pos = _cell_to_world(x + ox, y + oy)
@@ -181,6 +181,7 @@ func generate(seed, w, h, ts):
 				2: pc += 1
 	print("Tiles: ", count, " river: ", river_cells.size(), " heights: ", height_count, " contours: ", contour_count)
 	print("Biomes: water=", wc, " desert=", dc, " plain=", pc)
+	print("Map generation complete —  ", height_count, " overlay sprites, ", contour_count, " contour sprites")
 	# Debug: check a few water cells' biome values
 	var dw = 0
 	for yy in range(0, h, 50):
