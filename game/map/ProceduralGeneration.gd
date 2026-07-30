@@ -95,8 +95,8 @@ func generate(seed, w, h, ts):
 	var edge_count = 0
 
 	# Edge texture: semi-transparent brown strip
-	var edge_tex := _make_edge_texture(128, 32, Color(0.4, 0.25, 0.15, 0.7))
-	var deep_edge_tex := _make_edge_texture(128, 48, Color(0.3, 0.15, 0.08, 0.8))
+	var edge_tex = _make_edge_texture(128, 32, Color(0.4, 0.25, 0.15, 0.7))
+	var deep_edge_tex = _make_edge_texture(128, 48, Color(0.3, 0.15, 0.08, 0.8))
 
 	for y in range(h):
 		for x in range(w):
@@ -134,13 +134,8 @@ func generate(seed, w, h, ts):
 
 	print("Tiles: ", count, " river: ", river_cells.size(), " edges: ", edge_count)
 
-	# Order: edges first (behind), terrain on top
-	var result = Node2D.new()
-	edges.name = "ElevationEdges"
-	result.add_child(edges)
-	layer.name = "Terrain"
-	result.add_child(layer)
-	return result
+	# Return array of nodes: [edges_node, terrain_layer]
+	return [edges, layer]
 
 
 func _make_edge_texture(w, h, color):

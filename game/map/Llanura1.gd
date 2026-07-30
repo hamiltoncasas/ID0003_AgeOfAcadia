@@ -11,10 +11,11 @@ func _ready():
 	print("Seed: ", seed_val)
 
 	var gen = load("res://map/ProceduralGeneration.gd").new()
-	var result = gen.generate(seed_val, 500, 500, ts)
-	if result:
-		for child in result.get_children():
-			add_child(child)
+	var nodes = gen.generate(seed_val, 500, 500, ts)
+	if nodes is Array:
+		for node in nodes:
+			if node:
+				add_child(node)
 	
 	print("Ready")
 
