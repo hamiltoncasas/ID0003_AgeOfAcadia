@@ -45,13 +45,9 @@ var _unit_sprites: Resource = null
 ## RTS selection state
 var _selected: bool = false
 var _selection_ring: Sprite2D = null
-## Right-click movement target (null = not moving)
+## Right-click direct movement target (INF = not moving)
 var _move_target: Vector2 = Vector2.INF
-var _path: Array = []  # A* path waypoints
-var _path_index: int = 0
 const MOVE_ARRIVAL_DIST: float = 12.0
-## Navigation/pathfinding
-var _nav: NavigationSystem = null
 
 ## Health system
 var health: int = 100
@@ -147,24 +143,12 @@ func _unhandled_input(event: InputEvent) -> void:
 		_zoom(-ZOOM_STEP)
 
 
-## Right-click handler: find A* path and start following it.
+## Right-click handler: set direct movement target.
 func _move_to(target: Vector2) -> void:
-	_build_nav_if_needed()
-	_path = []
-	_path_index = 0
-
-	if _nav:
-		_path = _nav.find_path(global_position, target)
-
-	if _path.size() >= 2:
-		_path_index = 1
-		_move_target = _path[_path_index]
-	else:
-		_move_target = target
-
+	_move_target = target
 	_state = State.WALK
 	_spawn_move_pointer(_move_target)
-	print("--> MOVE_TO: target=", target, " move_target=", _move_target, " path=", _path.size())
+	print(">>> MOVE_TO: target=", target, " pos=", global_position)
 
 
 ## Build navigation graph from biome data (lazy, once).
@@ -185,39 +169,35 @@ func _physics_process(delta: float) -> void:
 		move_and_slide()
 		return
 
-	# RTS: A* pathfinding movement
-	if _move_target != Vector2.INF and _state in [State.IDLE, State.WALK]:
+	# RTS movement: simplify — direct movement toward target, no pathfinding
+	if _move_target != Vector2.INF:
 		var dist := global_position.distance_to(_move_target)
 		if dist > MOVE_ARRIVAL_DIST:
-			if Engine.get_process_frames() % 10 == 0:
-				print("  PHYSICS: moving dist=", dist, " target=", _move_target, " pos=", global_position)
 			var dir := (_move_target - global_position).normalized()
-			# Check water ahead
 			var look_ahead = global_position + dir * 8.0
 			if not _is_water_at(look_ahead):
 				velocity = dir * speed
 				_state = State.WALK
 				_update_animation(dir)
 			else:
-				# Blocked by water — skip to next waypoint or stop
-				_advance_path()
-		else:
-			# Reached current waypoint — advance to next
-			if _path_index < _path.size() - 1:
-				_advance_path()
-			else:
-				# Arrived at final destination
+				# Blocked by water
 				velocity = Vector2.ZERO
 				_state = State.IDLE
 				_update_animation(_last_direction)
 				_move_target = Vector2.INF
-				_path = []
-	elif _state in [State.IDLE, State.WALK]:
-		# No move target and not attacking/hurt/dead — stand still
-		velocity = Vector2.ZERO
+		else:
+			# Arrived
+			velocity = Vector2.ZERO
+			_state = State.IDLE
+			_update_animation(_last_direction)
+			_move_target = Vector2.INF
+			print(">>> ARRIVED at destination")
+	else:
+		# No movement target
 		if _state == State.WALK:
 			_state = State.IDLE
 			_update_animation(_last_direction)
+		velocity = Vector2.ZERO
 
 	move_and_slide()
 	
